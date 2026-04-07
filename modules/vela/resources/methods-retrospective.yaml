@@ -1,0 +1,34 @@
+id: methods-retrospective
+name: Retrospektive Elicitation-Methoden
+type: skill
+description: "2 Methoden für Rückblick und kontinuierliche Verbesserung"
+tags: [elicitation, retrospective, methods, vela]
+content: |
+  # Retrospektive Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn aus vergangenen Erfahrungen gelernt oder die aktuelle Situation durch
+  Perspektivwechsel besser verstanden werden soll. Ideal für Projekt-Reviews,
+  Sprint-Retrospektiven und persönliche Reflexion.
+
+  ### Hindsight Reflection
+
+  **Anleitung:**
+  1. Sich gedanklich in die Zukunft versetzen (6 Monate oder 1 Jahr)
+  2. Zurückblicken: Was war entscheidend? Was haette man anders gemacht?
+  3. Einsichten auf die aktuelle Situation anwenden
+
+  **Pattern:** future view → insights → application
+
+  **Tipp:** Der Perspektivwechsel in die Zukunft löst emotionale Befangenheit. Frage dich: Was würde mein zukünftiges Ich als wichtigste Lektion bezeichnen?
+
+  ### Lessons Learned Extraction
+
+  **Anleitung:**
+  1. Die Erfahrung neutral und faktisch zusammenfassen
+  2. Identifizieren was gut lief und was schlecht lief
+  3. Konkrete umsetzbare Aktionen für die Zukunft ableiten
+
+  **Pattern:** experience → lessons → actions
+
+  **Tipp:** Neutral bleiben ist entscheidend. Keine Schuldzuweisungen — nur Fakten, Erkenntnisse und konkrete Verbesserungen. Die besten Lessons Learned enden mit einer klaren Aktion.

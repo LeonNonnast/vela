@@ -1,0 +1,70 @@
+id: methods-creative
+name: Kreative Elicitation-Methoden
+type: skill
+description: "6 Methoden für kreative Ideenfindung und laterales Denken"
+tags: [elicitation, creative, methods, vela]
+content: |
+  # Kreative Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn konventionelles Denken nicht weiterführt, festgefahrene Diskussionen aufgelöst werden müssen oder neuartige Lösungsansätze gefragt sind. Diese Methoden brechen gewohnte Denkmuster auf und erzeugen unerwartete Verbindungen.
+
+  ### SCAMPER Method
+  **Anleitung:**
+  1. Bestehende Lösung oder Konzept als Ausgangspunkt nehmen
+  2. Systematisch alle 7 Linsen durchgehen: Substitute (Ersetzen), Combine (Kombinieren), Adapt (Anpassen), Modify (Verändern), Put to other use (Umnutzen), Eliminate (Entfernen), Reverse (Umkehren)
+  3. Pro Linse mindestens eine konkrete Variation dokumentieren
+
+  **Pattern:** S→C→A→M→P→E→R
+
+  **Tipp:** Nicht alle Linsen liefern brauchbare Ergebnisse — das ist normal. Oft reichen 2-3 starke Variationen.
+
+  ### Reverse Engineering
+  **Anleitung:**
+  1. Das gewünschte Endergebnis so konkret wie möglich beschreiben
+  2. Rückwärts arbeiten: Welcher Schritt kam direkt davor?
+  3. Wiederholen bis zum aktuellen Stand, dann den Pfad vorwärts formulieren
+
+  **Pattern:** end state → steps backward → path forward
+
+  **Tipp:** Besonders wirksam wenn der Weg vorwärts unklar ist, das Ziel aber klar definiert werden kann.
+
+  ### What If Scenarios
+  **Anleitung:**
+  1. Kernbedingungen des Problems identifizieren
+  2. Jede Bedingung bewusst verändern: "Was wäre, wenn X nicht gelten würde?"
+  3. Implikationen jedes Szenarios durchdenken und übertragbare Erkenntnisse extrahieren
+
+  **Pattern:** scenarios → implications → insights
+
+  **Tipp:** Die absurdesten Szenarien liefern oft die wertvollsten Einsichten.
+
+  ### Random Input Stimulus
+  **Anleitung:**
+  1. Ein zufälliges, themenfremdes Wort oder Konzept wählen
+  2. Assoziationen und Eigenschaften dieses Konzepts sammeln
+  3. Jede Assoziation gezielt auf das eigentliche Problem übertragen
+
+  **Pattern:** random word → associations → novel ideas
+
+  **Tipp:** Je weiter das zufällige Konzept vom Problem entfernt ist, desto kreativer werden die Ergebnisse.
+
+  ### Exquisite Corpse Brainstorm
+  **Anleitung:**
+  1. Erste Persona liefert einen Beitrag zum Thema
+  2. Nächste Persona sieht nur den vorherigen Beitrag und baut darauf auf
+  3. Nach allen Beiträgen das Gesamtergebnis zusammenführen und Überraschungen auswerten
+
+  **Pattern:** contribution → handoff → contribution → surprise
+
+  **Tipp:** Die bewusste Informationsbeschränkung erzwingt kreative Sprünge zwischen den Beiträgen.
+
+  ### Genre Mashup
+  **Anleitung:**
+  1. Zwei unverwandte Domänen oder Fachgebiete auswählen
+  2. Kernprinzipien und Methoden beider Domänen auflisten
+  3. Überschneidungen und hybride Ansätze identifizieren und auf das Problem anwenden
+
+  **Pattern:** domain A + domain B → hybrid insights
+
+  **Tipp:** Besonders effektiv mit Domänen, die völlig unterschiedliche Paradigmen verwenden (z.B. Biologie + Softwarearchitektur).

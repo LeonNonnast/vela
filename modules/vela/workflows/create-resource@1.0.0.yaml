@@ -1,0 +1,132 @@
+id: create-resource
+name: Resource anlegen
+version: "1.0.0"
+description: Erstelle eine neue Resource (Schema, Beispiel, Konvention, etc.).
+
+lifecycle:
+  allow_pause: true
+  auto_cancel_after: "7d"
+
+tools:
+  - name: vela_list_repos
+    server: vela
+    description: Module auflisten
+  - name: vela_validate
+    server: vela
+    description: Resource-YAML validieren
+  - name: vela_push_to_module
+    server: vela
+    description: Resource in Modul pushen
+
+steps:
+  - id: modul-waehlen
+    name: "Schritt 1/4 — Ziel-Modul wählen"
+    type: execute
+    tools: [vela_list_repos]
+    instructions: |
+      Zeige dem User seine installierten Module mit vela_list_repos().
+
+      Der User soll wählen, in welches Modul die neue Resource
+      gespeichert werden soll. Gib den vollen Repo-Namen zurück
+      (z.B. "owner/my-workflows").
+
+      Falls keine Module vorhanden: empfehle den Workflow
+      "Modul erstellen" (create-module).
+    capture:
+      - key: target_repo
+        label: "Ziel-Modul (owner/name)"
+        required: true
+        source: output
+
+  - id: daten
+    name: "Schritt 2/4 — Resource-Daten"
+    type: freeform
+    prompt: |
+      Lass uns eine neue Resource anlegen!
+
+      Bitte gib folgende Daten an:
+      - **ID**: Eindeutiger Bezeichner (z.B. "python-conventions")
+      - **Name**: Anzeigename (z.B. "Python Coding Conventions")
+      - **Typ**: schema | example | scaffold | skill | convention | reference
+      - **Beschreibung**: Kurze Beschreibung
+      - **Inhalt**: Der eigentliche Resource-Inhalt (Markdown, Code, YAML, etc.)
+      - **Tags**: Optionale Tags zur Kategorisierung (komma-separiert)
+    capture:
+      - key: resource_id
+        label: "Resource ID"
+        required: true
+        input: text
+        placeholder: "z.B. python-conventions"
+      - key: resource_name
+        label: "Resource Name"
+        required: true
+      - key: resource_type
+        label: "Typ"
+        required: true
+        input: select
+        elicit: always
+        options:
+          - key: schema
+            label: Schema
+          - key: example
+            label: Example
+          - key: scaffold
+            label: Scaffold
+          - key: skill
+            label: Skill
+          - key: convention
+            label: Convention
+          - key: reference
+            label: Reference
+      - key: resource_description
+        label: "Beschreibung"
+      - key: resource_content
+        label: "Inhalt"
+        required: true
+      - key: resource_tags
+        label: "Tags"
+        input: text
+        suggest: true
+
+  - id: generieren
+    name: "Schritt 3/4 — YAML generieren"
+    type: execute
+    instructions: |
+      Generiere eine Resource-YAML-Definition:
+
+      - id: {{steps.daten.resource_id}}
+      - name: {{steps.daten.resource_name}}
+      - type: {{steps.daten.resource_type}}
+      - description: {{steps.daten.resource_description}}
+      - content: {{steps.daten.resource_content}} (als YAML-Multiline-String)
+      - tags: {{steps.daten.resource_tags}} (als YAML-Liste parsen)
+
+      Zeige dem User die generierte YAML zur Prüfung.
+    depends_on:
+      - step: daten
+        fields: [resource_id, resource_name, resource_type, resource_description, resource_content, resource_tags]
+    capture:
+      - key: generated_yaml
+        label: "Generierte YAML"
+        required: true
+
+  - id: speichern
+    name: "Schritt 4/4 — Validieren und pushen"
+    type: execute
+    tools: [vela_validate, vela_push_to_module]
+    instructions: |
+      Validiere und pushe die Resource:
+
+      1. vela_validate(type="resource", content=<yaml>) zur Prüfung
+      2. Bei Fehlern: zeige Fehler und biete Korrektur an
+      3. Bei Erfolg: vela_push_to_module(
+           repo="{{steps.modul-waehlen.target_repo}}",
+           file_type="resource",
+           content=<yaml>
+         )
+      4. Melde dem User den Erfolg mit Link zum GitHub-Repo
+    depends_on:
+      - step: modul-waehlen
+        fields: [target_repo]
+      - step: generieren
+        fields: [generated_yaml]

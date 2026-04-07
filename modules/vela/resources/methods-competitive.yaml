@@ -1,0 +1,25 @@
+id: methods-competitive
+name: Kompetitive Elicitation-Methoden
+type: skill
+description: "3 Methoden mit Wettbewerb und adversarialem Denken"
+tags: [elicitation, competitive, methods, vela]
+content: |
+  # Kompetitive Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn Robustheit, Sicherheit oder Überzeugungskraft getestet werden müssen. Kompetitive Methoden decken Schwächen auf, die kooperative Ansätze übersehen. Ideal für Security-Reviews, Pitch-Vorbereitung und Code-Qualitätssicherung.
+
+  ### Red Team vs Blue Team
+  **Anleitung:** 1. Blue Team definiert die Verteidigungsstrategie oder Architektur. 2. Red Team greift systematisch an und sucht Schwachstellen. 3. Blue Team härtet basierend auf den Erkenntnissen nach. Iteriere bis ein akzeptables Sicherheitsniveau erreicht ist.
+  **Pattern:** defense → attack → hardening
+  **Tipp:** Das Red Team sollte verschiedene Angreifer-Profile nutzen — vom Script-Kiddie bis zum Nation-State-Actor. Jedes Profil deckt andere Schwachstellen auf. Dokumentiere jeden erfolgreichen Angriff als Testfall für die Zukunft.
+
+  ### Shark Tank Pitch
+  **Anleitung:** 1. Bereite einen überzeugenden Pitch für deine Idee oder Architektur vor. 2. Präsentiere vor skeptischen Investor-Personas mit unterschiedlichen Prioritäten (Kosten, Skalierbarkeit, Time-to-Market). 3. Beantworte harte Fragen und verfeinere den Vorschlag basierend auf dem Feedback.
+  **Pattern:** pitch → challenges → refinement
+  **Tipp:** Der härtестe Investor ist der, der nach dem ROI fragt. Wenn du diese Frage nicht beantworten kannst, ist der Vorschlag noch nicht reif. Nutze die Methode auch intern, bevor du Stakeholdern präsentierst.
+
+  ### Code Review Gauntlet
+  **Anleitung:** 1. Lege den Code mehreren Senior-Dev-Personas mit verschiedenen Philosophien vor (Performance-Fanatiker, Clean-Code-Purist, Pragmatiker). 2. Jeder Reviewer bewertet nach seinen Kriterien und begründet. 3. Diskutiere widersprüchliche Reviews und definiere Standards, die alle Perspektiven beruecksichtigen.
+  **Pattern:** reviews → debates → standards
+  **Tipp:** Die wertvollsten Erkenntnisse entstehen dort, wo sich Reviewer widersprechen. Ein Performance-Fanatiker und ein Clean-Code-Purist werden selten einig — aber der Kompromiss ist oft die beste Lösung. Dokumentiere die entstandenen Standards als Team-Konventionen.

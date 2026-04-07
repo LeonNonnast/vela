@@ -1,0 +1,63 @@
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.31.0.0/16
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: ${API_IMAGE_NAME:-vela-api:latest}
+    container_name: vela-api
+    restart: ${RESTART_POLICY:-no}
+    network_mode: host
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-mysql+aiomysql://${DB_USER}:${DB_PASSWORD}@localhost:3306/${DB_NAME}}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - APP_ENV=${APP_ENV:-production}
+      - DEBUG=${DEBUG:-false}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:8001}
+      - SENTRY_DSN=${SENTRY_DSN}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    entrypoint: ["/app/scripts/docker-entrypoint.sh"]
+    command: ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8001"]
+
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    image: ${MCP_IMAGE_NAME:-vela-mcp:latest}
+    container_name: vela-mcp
+    restart: ${RESTART_POLICY:-no}
+    network_mode: host
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-mysql+aiomysql://${DB_USER}:${DB_PASSWORD}@localhost:3306/${DB_NAME}}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - APP_ENV=${APP_ENV:-production}
+      - DEBUG=${DEBUG:-false}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - VELA_MODULES=${VELA_MODULES}
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:8000}
+      - MCP_PORT=${MCP_PORT:-8000}
+      - SENTRY_DSN=${SENTRY_DSN}
+    volumes:
+      - fastmcp-data:/root/.local/share/fastmcp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    entrypoint: ["/app/scripts/docker-entrypoint.sh"]
+    command: ["uvicorn", "src.mcp.server:app", "--host", "0.0.0.0", "--port", "8000"]
+
+volumes:
+  fastmcp-data:

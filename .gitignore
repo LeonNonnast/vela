@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+docs
+
+.pytest_cache
+.claude
+_bmad
+_bmad-output
+.speckit
+examples
+# Virtual environment
+.venv/
+
+# Database
+data/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+
+vela.db

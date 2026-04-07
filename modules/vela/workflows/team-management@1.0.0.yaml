@@ -1,0 +1,182 @@
+id: team-management
+name: Team verwalten
+version: "1.0.0"
+description: Team-Mitglieder und Rollen im Projekt verwalten.
+
+context:
+  auto: [active_project]
+
+lifecycle:
+  allow_pause: true
+  auto_cancel_after: "30d"
+
+params:
+  - name: project_slug
+    label: "Projekt"
+    description: "Slug des Projekts dessen Team verwaltet werden soll"
+    required: true
+
+steps:
+  - id: aktion-waehlen
+    name: "Aktion wählen"
+    type: choice
+    prompt: |
+      Team-Verwaltung für Projekt **{{params.project_slug}}**.
+      Was möchtest du tun?
+    options:
+      - key: anzeigen
+        label: "Team anzeigen"
+        description: "Aktuelle Team-Mitglieder und Rollen anzeigen"
+        next: team-anzeigen
+      - key: hinzufuegen
+        label: "Mitglied hinzufügen"
+        description: "Neues Team-Mitglied mit Rolle hinzufügen"
+        next: mitglied-hinzufuegen
+      - key: entfernen
+        label: "Mitglied entfernen"
+        description: "Team-Mitglied entfernen"
+        next: mitglied-entfernen
+      - key: rolle-aendern
+        label: "Rolle ändern"
+        description: "Rolle eines Team-Mitglieds ändern"
+        next: rolle-aendern
+
+  - id: team-anzeigen
+    name: "Team anzeigen"
+    type: execute
+    instructions: |
+      1. Rufe vela_get_project(slug="{{params.project_slug}}") auf
+      2. Lese das "conventions"-Feld und suche nach Team-Daten (JSON-Objekt mit Key "team")
+      3. Zeige die Team-Mitglieder übersichtlich als Tabelle an: Name, Rolle, Email
+      4. Falls kein Team definiert ist, melde "Noch keine Team-Mitglieder definiert."
+    next: aktion-waehlen
+
+  - id: mitglied-hinzufuegen
+    name: "Mitglied hinzufügen"
+    type: freeform
+    prompt: |
+      Neues Team-Mitglied hinzufügen für Projekt **{{params.project_slug}}**.
+
+      Bitte gib an:
+      - **Name**: Vollständiger Name
+      - **Rolle**: z.B. Developer, Architect, PM, QA, DevOps
+      - **Email**: Kontakt-Email (optional)
+    capture:
+      - key: member_name
+        label: "Name"
+        required: true
+      - key: member_role
+        label: "Rolle"
+        required: true
+        input: select
+        elicit: always
+        options:
+          - key: developer
+            label: Developer
+          - key: architect
+            label: Architect
+          - key: pm
+            label: PM
+          - key: qa
+            label: QA
+          - key: devops
+            label: DevOps
+          - key: designer
+            label: Designer
+          - key: other
+            label: Other
+      - key: member_email
+        label: "Email"
+    next: speichern-mitglied
+
+  - id: speichern-mitglied
+    name: "Mitglied speichern"
+    type: execute
+    instructions: |
+      1. Rufe vela_get_project(slug="{{params.project_slug}}") auf
+      2. Lese "conventions" und parse vorhandene Team-Daten
+      3. Füge neues Mitglied hinzu: {name: "{{steps.mitglied-hinzufuegen.member_name}}", role: "{{steps.mitglied-hinzufuegen.member_role}}", email: "{{steps.mitglied-hinzufuegen.member_email}}"}
+      4. Schreibe aktualisierte conventions mit vela_set_project zurück
+      5. Bestätige dem User die Änderung
+    depends_on:
+      - step: mitglied-hinzufuegen
+        fields: [member_name, member_role, member_email]
+    next: aktion-waehlen
+
+  - id: mitglied-entfernen
+    name: "Mitglied entfernen"
+    type: freeform
+    prompt: |
+      Welches Team-Mitglied soll aus Projekt **{{params.project_slug}}** entfernt werden?
+
+      Rufe zuerst vela_get_project auf um die aktuelle Team-Liste zu sehen.
+      Gib den Namen des zu entfernenden Mitglieds an.
+    capture:
+      - key: remove_name
+        label: "Name"
+        required: true
+    next: speichern-entfernung
+
+  - id: speichern-entfernung
+    name: "Entfernung speichern"
+    type: execute
+    instructions: |
+      1. Rufe vela_get_project(slug="{{params.project_slug}}") auf
+      2. Lese "conventions" und parse Team-Daten
+      3. Entferne Mitglied mit Name "{{steps.mitglied-entfernen.remove_name}}"
+      4. Schreibe aktualisierte conventions mit vela_set_project zurück
+      5. Bestätige dem User die Änderung
+    depends_on:
+      - step: mitglied-entfernen
+        fields: [remove_name]
+    next: aktion-waehlen
+
+  - id: rolle-aendern
+    name: "Rolle ändern"
+    type: freeform
+    prompt: |
+      Rolle ändern für Projekt **{{params.project_slug}}**.
+
+      Rufe zuerst vela_get_project auf um die aktuelle Team-Liste zu sehen.
+      Gib an:
+      - **Name**: Welches Mitglied
+      - **Neue Rolle**: Die neue Rolle
+    capture:
+      - key: change_name
+        label: "Name"
+        required: true
+      - key: new_role
+        label: "Neue Rolle"
+        required: true
+        input: select
+        elicit: always
+        options:
+          - key: developer
+            label: Developer
+          - key: architect
+            label: Architect
+          - key: pm
+            label: PM
+          - key: qa
+            label: QA
+          - key: devops
+            label: DevOps
+          - key: designer
+            label: Designer
+          - key: other
+            label: Other
+    next: speichern-rolle
+
+  - id: speichern-rolle
+    name: "Rolle speichern"
+    type: execute
+    instructions: |
+      1. Rufe vela_get_project(slug="{{params.project_slug}}") auf
+      2. Lese "conventions" und parse Team-Daten
+      3. Ändere Rolle von "{{steps.rolle-aendern.change_name}}" zu "{{steps.rolle-aendern.new_role}}"
+      4. Schreibe aktualisierte conventions mit vela_set_project zurück
+      5. Bestätige dem User die Änderung
+    depends_on:
+      - step: rolle-aendern
+        fields: [change_name, new_role]
+    next: aktion-waehlen

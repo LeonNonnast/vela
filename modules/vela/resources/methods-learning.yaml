@@ -1,0 +1,35 @@
+id: methods-learning
+name: Lern-Elicitation-Methoden
+type: skill
+description: "2 Methoden für tiefes Verständnis und Wissensüberprüfung"
+tags: [elicitation, learning, methods, vela]
+content: |
+  # Lern-Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn tiefes Verständnis geprüft oder komplexes Wissen verinnerlicht werden soll.
+  Ideal für Onboarding, Wissenstransfer und Selbstüberprüfung.
+
+  ### Feynman Technique
+
+  **Anleitung:**
+  1. Konzept wählen das verstanden werden soll
+  2. Einfach erklären als ob man es einem Kind beibringt
+  3. Lücken identifizieren wo die Erklärung stockt
+  4. Vereinfachen und den Zyklus wiederholen bis es fliesst
+
+  **Pattern:** complex → simple → gaps → mastery
+
+  **Tipp:** Wenn du es nicht einfach erklären kannst, hast du es nicht wirklich verstanden. Die Lücken in der Erklärung zeigen genau wo Verständnis fehlt.
+
+  ### Active Recall Testing
+
+  **Anleitung:**
+  1. Alles Referenzmaterial weglegen
+  2. Aus dem Gedächtnis das Gelernte wiedergeben
+  3. Lücken zwischen Wiedergabe und Original identifizieren
+  4. Gezielt die Lücken nachlernen und erneut testen
+
+  **Pattern:** test → gaps → reinforcement
+
+  **Tipp:** Aktives Abrufen ist 3x effektiver als nochmaliges Lesen. Die Anstrengung beim Erinnern stärkt die neuronalen Verbindungen.

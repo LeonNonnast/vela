@@ -1,0 +1,107 @@
+id: brain-deep
+name: Tiefgehende Brainstorming-Techniken
+type: skill
+description: 8 Techniken für gründliche Analyse und Ursachenforschung
+tags: [brainstorming, deep, techniques, vela]
+content: |
+  # Tiefgehende Brainstorming-Techniken
+
+  ## Wann einsetzen
+
+  Tiefgehende Techniken sind die richtige Wahl, wenn oberflächliche Lösungen nicht
+  ausreichen. Nutze sie bei komplexen Problemen mit mehreren Ursachenschichten, bei
+  wiederkehrenden Fehlern oder wenn du das Gefühl hast, dass die eigentliche Ursache
+  noch verborgen liegt. Ideal für Root-Cause-Analysen, Systemdesign und strategische
+  Entscheidungen.
+
+  ### Five Whys
+
+  **Anleitung:**
+  1. Formuliere das Problem als klaren Satz.
+  2. Frage "Warum?" und beantworte die Frage ehrlich.
+  3. Frage erneut "Warum?" zur vorherigen Antwort — wiederhole dies fünfmal.
+  4. Die letzte Antwort zeigt meist die Grundursache. Formuliere dort deine Massnahme.
+
+  **Tipp:** Fünf ist ein Richtwert — manchmal reichen drei, manchmal brauchst du
+  sieben. Höre auf, wenn du auf systemische oder strukturelle Ursachen stößt.
+
+  ### Morphological Analysis
+
+  **Anleitung:**
+  1. Zerlege dein Problem in 4-6 unabhängige Parameter oder Dimensionen.
+  2. Liste für jeden Parameter 3-5 mögliche Ausprägungen auf.
+  3. Erstelle eine Matrix und kombiniere systematisch Ausprägungen aus jeder Dimension.
+  4. Bewerte die vielversprechendsten Kombinationen nach Machbarkeit und Wirkung.
+
+  **Tipp:** Diese Methode erzeugt hunderte Kombinationen — nutze Bewertungskriterien
+  früh, um die Auswahl handhabbar zu halten. Besonders stark bei Produktdesign
+  und Konfigurationsproblemen.
+
+  ### Provocation Technique
+
+  **Anleitung:**
+  1. Formuliere eine bewusst provokante Aussage über dein Problem (z.B. "Kunden sind das Problem").
+  2. Untersuche die Provokation ernsthaft: Was wäre, wenn sie stimmen würde?
+  3. Extrahiere nützliche Einsichten aus der provozierten Denkrichtung.
+  4. Entwickle realistische Lösungen basierend auf diesen Einsichten.
+
+  **Tipp:** Die Provokation muss unbequem sein — nur dann zwingt sie dich aus
+  gewohnten Denkbahnen. Edward de Bono nannte dies "PO" (Provocative Operation).
+
+  ### Assumption Reversal
+
+  **Anleitung:**
+  1. Liste alle Annahmen auf, die du über dein Problem für selbstverständlich hältst.
+  2. Kehre jede Annahme bewusst um (z.B. "Nutzer wollen Einfachheit" wird "Nutzer wollen Komplexität").
+  3. Prüfe jede umgekehrte Annahme: Gibt es Fälle, in denen sie zutrifft?
+  4. Entwickle Lösungen für die Fälle, in denen die Umkehrung tatsächlich gilt.
+
+  **Tipp:** Viele Durchbrüche entstehen, weil jemand eine "offensichtliche" Annahme
+  hinterfragt hat. Netflix hinterfragte "Kunden wollen DVDs im Laden ausleihen".
+
+  ### Question Storming
+
+  **Anleitung:**
+  1. Setze eine Regel: Nur Fragen sind erlaubt, keine Antworten oder Lösungen.
+  2. Generiere in 15 Minuten möglichst viele Fragen zum Problem.
+  3. Sortiere die Fragen nach Tiefe: Oberflächlich, mittel, fundamental.
+  4. Beantworte zuerst die fundamentalen Fragen — sie öffnen neue Lösungsräume.
+
+  **Tipp:** Fragen sind mächtiger als Antworten, weil sie den Denkrahmen
+  erweitern statt ihn einzuengen. Eine gute Frage ist mehr wert als zehn
+  mittelmassige Antworten.
+
+  ### Constraint Mapping
+
+  **Anleitung:**
+  1. Identifiziere alle Einschränkungen deines Problems (technisch, finanziell, zeitlich, organisatorisch).
+  2. Visualisiere die Einschränkungen als Netzwerk mit Abhängigkeiten.
+  3. Markiere, welche Einschränkungen echte Grenzen und welche nur Annahmen sind.
+  4. Entferne oder lockere die unechten Einschränkungen und entwickle Lösungen im erweiterten Raum.
+
+  **Tipp:** Oft sind 60-70% der wahrgenommenen Einschränkungen nur Gewohnheiten
+  oder veraltete Regeln. Die Visualisierung macht dies sichtbar.
+
+  ### Failure Analysis
+
+  **Anleitung:**
+  1. Sammle 5-10 dokumentierte Fehlschläge aus deinem Problembereich.
+  2. Analysiere jeden Fehlschlag: Was wurde versucht? Warum scheiterte es?
+  3. Suche nach Mustern über alle Fehlschläge hinweg.
+  4. Entwickle Lösungen, die diese Fehlermuster gezielt vermeiden.
+
+  **Tipp:** Fehlschläge sind die wertvollsten Datenquellen — sie zeigen exakt,
+  wo die Fallstricke liegen. Erfolgreiche Innovatoren studieren Misserfolge
+  systematischer als Erfolge.
+
+  ### Emergent Thinking
+
+  **Anleitung:**
+  1. Definiere nur die Grundregeln und Rahmenbedingungen deines Problems.
+  2. Beginne mit kleinen Experimenten ohne festes Ziel.
+  3. Beobachte, welche Muster und Lösungsansätze sich natürlich herausbilden.
+  4. Verstärke vielversprechende Muster und lasse schwache fallen.
+
+  **Tipp:** Nicht jedes Problem braucht einen Top-Down-Plan. Komplexe Systeme
+  wie Städte, Ökosysteme und Märkte lösen Probleme oft emergent — lass
+  dich von dieser Weisheit leiten.

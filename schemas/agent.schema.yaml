@@ -1,0 +1,109 @@
+# JSON Schema for Vela Agent Definition (YAML format)
+# Version: 0.2.0 — extended with LLM-friendly documentation
+#
+# PURPOSE:
+#   Defines an agent persona that gets registered as an MCP Prompt.
+#   When activated, the persona is injected into every workflow step prompt.
+#
+# STORAGE:
+#   - Bundled: modules/{module}/agents/{id}.yaml
+#   - User:    ~/.vela/agents/{id}.yaml
+#   - User definitions override bundled ones with the same ID.
+#
+# MCP PROMPT NAME: vela_agent_{id}
+#
+# MINIMAL EXAMPLE:
+#   id: my-agent
+#   name: My Agent
+#   persona: Du bist ein hilfreicher Assistent.
+#   workflows:
+#     - my-workflow
+#
+# FULL EXAMPLE:
+#   id: code-reviewer
+#   name: Code Reviewer
+#   persona: |
+#     Du bist ein erfahrener Senior Developer mit Fokus auf Code-Qualität.
+#     Kommunikationsstil: Direkt, konstruktiv, mit konkreten Vorschlägen.
+#     Regeln: Immer auf OWASP Top 10 prüfen. Keine Änderungen ohne Tests.
+#   greeting: |
+#     Begrüße den Nutzer und biete an, zwischen den verfügbaren
+#     Workflows zu wählen. Führe die Workflows auf und lass den
+#     Nutzer basierend auf dem aktuellen Kontext entscheiden.
+#   workflows:
+#     - code-review
+#     - security-audit
+#   tools:
+#     - vela_remember
+#     - vela_recall
+#     - vela_list_resources
+
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Vela Agent Definition
+type: object
+required: [id, name]
+
+properties:
+  id:
+    type: string
+    pattern: "^[a-z0-9-]+$"
+    description: |
+      Unique agent identifier, used as MCP prompt suffix.
+      Becomes: vela_agent_{id}
+      Convention: lowercase with hyphens (e.g. "code-reviewer")
+
+  name:
+    type: string
+    description: |
+      Display name shown in MCP prompt listing and agent menus.
+      Can contain any characters including spaces and umlauts.
+
+  persona:
+    type: string
+    description: |
+      Agent persona injected as assistant-role message (role="assistant").
+      The LLM sees this as its own identity, not as user input.
+      Defines: role, expertise, communication style, behavioral rules.
+
+      IMPORTANT: Always write in "Du bist..." form, never "Ich bin...".
+      This is a prompt TO the LLM, not text FROM the LLM.
+
+      Good:  "Du bist ein erfahrener Architekt mit Fokus auf..."
+      Bad:   "Ich bin ein erfahrener Architekt mit Fokus auf..."
+
+      WHY: Ensures consistent agent behavior across all workflow steps.
+      TIP: Write as a multi-line YAML string using |
+
+  greeting:
+    type: string
+    description: |
+      Instruction for the LLM to greet the user (role="user").
+      This is NOT a greeting text to display — it is a prompt that
+      tells the LLM how to start the conversation.
+
+      IMPORTANT: Write as instruction in "Du bist..." form.
+      The LLM will generate the actual greeting based on this.
+
+      Good:  "Begrüße den Nutzer und biete an, zwischen den
+              Workflows des Agenten zu wählen. Führe diese auf."
+      Bad:   "Hallo! Ich bin dein Assistent. Wie kann ich helfen?"
+
+      Optional — if omitted, the agent starts without greeting.
+
+  workflows:
+    type: array
+    items:
+      type: string
+    description: |
+      List of workflow IDs this agent can run.
+      Shown as a menu in the agent's MCP prompt.
+      WHY: Scopes the agent to relevant workflows only.
+
+  tools:
+    type: array
+    items:
+      type: string
+    description: |
+      MCP tools always available to this agent.
+      Listed in the agent's MCP prompt for tool discovery.
+      Example: [vela_remember, vela_recall, vela_set_project]

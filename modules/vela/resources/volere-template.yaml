@@ -1,0 +1,84 @@
+id: volere-template
+name: Volere Requirements Template
+type: scaffold
+description: "Kompaktes Scaffold basierend auf dem Volere Requirements Template (Robertson) mit 27 Sektionen"
+tags: [requirements, volere, scaffold, template, vela]
+content: |
+  # Volere Requirements Template (Robertson)
+
+  ## Projektrahmen
+  ### 1. Zweck des Projekts
+  Warum wird das System gebaut? Geschäftsproblem das gelöst werden soll.
+
+  ### 2. Stakeholder
+  Wer hat Interesse am System? Auftraggeber, Nutzer, Wartung, Betroffene.
+
+  ### 3. Systemgrenzen (Scope)
+  Was gehört dazu, was nicht? Use-Case-Diagramm der Systemgrenzen.
+
+  ### 4. Kontext
+  Wie fügt sich das System in die bestehende Umgebung ein? Nachbarsysteme, Schnittstellen.
+
+  ### 5. Geschäftsereignisse & Use Cases
+  Welche Ereignisse lösen Systemaktionen aus? Business Events + zugehörige Use Cases.
+
+  ## Anforderungen
+  ### 6. Funktionale Anforderungen
+  Was muss das System tun? Pro Requirement:
+  - **Beschreibung:** Was genau soll passieren
+  - **Rationale:** Warum ist das nötig
+  - **Fit Criterion:** Messbares Abnahmekriterium
+  - **Quelle:** Wer hat es gefordert
+  - **Priorität:** Must/Should/Could/Won't
+
+  ### 7. Nicht-funktionale Anforderungen
+  #### 7a. Look & Feel
+  Erscheinungsbild, Branding, UI-Stil.
+
+  #### 7b. Usability & Humanity
+  Benutzerfreundlichkeit, Barrierefreiheit, Lernkurve.
+
+  #### 7c. Performance
+  Antwortzeiten, Durchsatz, Kapazität.
+
+  #### 7d. Operational & Environmental
+  Betriebsumgebung, Plattformen, Integration.
+
+  #### 7e. Maintainability & Support
+  Wartbarkeit, Erweiterbarkeit, Support-Anforderungen.
+
+  #### 7f. Security
+  Zugang, Vertraulichkeit, Integrität, Audit.
+
+  #### 7g. Cultural
+  Kulturelle, politische, rechtliche Anforderungen.
+
+  #### 7h. Compliance
+  Gesetze, Standards, Regulierungen.
+
+  ### 8. Treiber & Constraints
+  #### 8a. Lösungs-Constraints
+  Technische und organisatorische Einschränkungen.
+
+  #### 8b. Annahmen
+  Was wird als gegeben vorausgesetzt?
+
+  ## Qualität
+  ### 9. Fit Criteria
+  Messbare Abnahmekriterien pro Requirement. Wie beweisen wir Erfüllung?
+
+  ### 10. Requirement-Qualität
+  Checkliste: Ist jedes Requirement atomar, testbar, konsistent, eindeutig?
+
+  ## Projektplanung
+  ### 11. Kosten & Aufwand
+  Schätzungen für Implementierung.
+
+  ### 12. Risiken
+  Projektrisiken und Mitigationsstrategien.
+
+  ### 13. Wartung & Evolution
+  Wie wird das System langfristig gepflegt und weiterentwickelt?
+
+  ### 14. Glossar
+  Einheitliche Begriffsdefinitionen.

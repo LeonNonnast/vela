@@ -1,0 +1,54 @@
+{
+  "name": "vela-sdk",
+  "version": "0.1.0",
+  "description": "Workflow engine SDK for MCP servers — add structured, multi-step workflows to any MCP server",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    },
+    "./adapters/fastmcp": {
+      "import": { "types": "./dist/adapters/fastmcp.d.ts", "default": "./dist/adapters/fastmcp.js" },
+      "require": { "types": "./dist/adapters/fastmcp.d.cts", "default": "./dist/adapters/fastmcp.cjs" }
+    },
+    "./adapters/mcp-sdk": {
+      "import": { "types": "./dist/adapters/mcp-sdk.d.ts", "default": "./dist/adapters/mcp-sdk.js" },
+      "require": { "types": "./dist/adapters/mcp-sdk.d.cts", "default": "./dist/adapters/mcp-sdk.cjs" }
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "zod": "^3.23.0",
+    "yaml": "^2.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "tsup": "^8.0.0",
+    "vitest": "^2.0.0",
+    "fastmcp": "^3.0.0",
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  },
+  "peerDependencies": {
+    "fastmcp": ">=3.0.0",
+    "@modelcontextprotocol/sdk": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "fastmcp": { "optional": true },
+    "@modelcontextprotocol/sdk": { "optional": true }
+  },
+  "license": "MIT",
+  "author": "Arineo GmbH",
+  "keywords": ["mcp", "workflow", "state-machine", "fastmcp", "ai", "agent"],
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,66 @@
+id: brain-structured
+name: Strukturierte Brainstorming-Techniken
+type: skill
+description: "7 Techniken für systematische und methodische Ideenfindung"
+tags: [brainstorming, structured, techniques, vela]
+content: |
+  # Strukturierte Brainstorming-Techniken
+
+  ## Wann einsetzen
+  Diese Techniken eignen sich, wenn du einen klaren Rahmen brauchst — bei komplexen Problemen, Teamentscheidungen oder wenn freies Brainstorming zu chaotisch wird. Sie bieten Struktur und Systematik für die Ideenfindung.
+
+  ### SCAMPER Method
+  **Anleitung:**
+  1. Wende die 7 Kreativitätslinsen nacheinander auf dein Problem an: Substitute (Ersetzen), Combine (Kombinieren), Adapt (Anpassen), Modify (Verändern), Put to other uses (Umwidmen), Eliminate (Streichen), Reverse (Umkehren).
+  2. Notiere für jede Linse mindestens eine Idee.
+  3. Bewerte die Ergebnisse erst nach Abschluss aller sieben Runden.
+
+  **Tipp:** Selbst scheinbar unsinnige SCAMPER-Antworten führen oft zu überraschenden Lösungen.
+
+  ### Six Thinking Hats
+  **Anleitung:**
+  1. Durchlaufe systematisch sechs Perspektiven: White (Fakten und Daten), Red (Emotionen und Intuition), Yellow (Vorteile und Chancen), Black (Risiken und Bedenken), Green (Kreativität und Alternativen), Blue (Prozess und Überblick).
+  2. Trage bei jedem Hut nur die passende Perspektive vor.
+  3. Wechsle bewusst zwischen den Hüten, um einseitiges Denken zu vermeiden.
+
+  **Tipp:** Starte mit White für die Faktenlage und ende mit Blue für die Zusammenfassung.
+
+  ### Mind Mapping
+  **Anleitung:**
+  1. Schreibe das zentrale Konzept oder Problem in die Mitte.
+  2. Verzweige visuell in Hauptkategorien und Unterthemen.
+  3. Verbinde überraschende Querverbindungen zwischen verschiedenen Ästen.
+
+  **Tipp:** Farben und Symbole helfen, Muster schneller zu erkennen.
+
+  ### Resource Constraints
+  **Anleitung:**
+  1. Lege extreme Einschränkungen fest: nur 1 Euro Budget, keine Technik, nur 1 Stunde Zeit.
+  2. Entwickle Lösungen unter diesen Bedingungen.
+  3. Prüfe, welche Kern-Elemente auch ohne Einschränkung wertvoll bleiben.
+
+  **Tipp:** Einschränkungen zwingen zur Kreativität — sie sind kein Hindernis, sondern Katalysator.
+
+  ### Decision Tree Mapping
+  **Anleitung:**
+  1. Definiere die erste Entscheidung und zeichne alle möglichen Optionen als Aeste.
+  2. Verfolge jeden Ast weiter: Welche Folgeentscheidungen und Ergebnisse ergeben sich?
+  3. Kartiere den gesamten Entscheidungsraum, bevor du einen Pfad wählst.
+
+  **Tipp:** Visualisiere den Baum auf Papier — Komplexität wird so greifbar.
+
+  ### Solution Matrix
+  **Anleitung:**
+  1. Liste alle Problemvariablen als Zeilen und mögliche Lösungsansätze als Spalten auf.
+  2. Füge in jede Zelle eine konkrete Kombination aus Variable und Ansatz ein.
+  3. Bewerte systematisch, welche Kombinationen das größte Potenzial haben.
+
+  **Tipp:** Die Matrix deckt blinde Flecken auf, die bei linearem Denken verborgen bleiben.
+
+  ### Trait Transfer
+  **Anleitung:**
+  1. Wähle eine erfolgreiche Lösung aus einer völlig anderen Domäne (z.B. Natur, Sport, Musik).
+  2. Identifiziere die Erfolgsmerkmale dieser Lösung.
+  3. Übertrage diese Merkmale auf dein aktuelles Problem.
+
+  **Tipp:** Die besten Innovationen entstehen oft an der Schnittstelle verschiedener Disziplinen.

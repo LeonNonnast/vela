@@ -1,0 +1,40 @@
+id: methods-advanced
+name: Fortgeschrittene Elicitation-Methoden
+type: skill
+description: "6 Methoden für komplexe Reasoning- und Analysemuster"
+tags: [elicitation, advanced, methods, vela]
+content: |
+  # Fortgeschrittene Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn einfache Prompt-Techniken nicht ausreichen und das Problem tiefes, strukturiertes Reasoning erfordert. Besonders geeignet für Architekturentscheidungen, komplexe Debugging-Szenarien und Strategieentwicklung mit vielen Variablen.
+
+  ### Tree of Thoughts
+  **Anleitung:** 1. Formuliere das Problem und identifiziere mögliche Reasoning-Pfade. 2. Verfolge jeden Pfad parallel mit expliziter Bewertung. 3. Evaluiere alle Pfade und wähle den vielversprechendsten.
+  **Pattern:** paths → evaluation → selection
+  **Tipp:** Beschränke dich auf 3-4 Pfade — zu viele führen zu Analyse-Paralyse. Bewerte jeden Pfad nach Machbarkeit und Informationsgewinn.
+
+  ### Graph of Thoughts
+  **Anleitung:** 1. Erfasse alle relevanten Ideen und Konzepte als Knoten. 2. Identifiziere Verbindungen, Abhängigkeiten und Widersprüche zwischen Knoten. 3. Analysiere emergente Muster im Gesamtnetzwerk.
+  **Pattern:** nodes → connections → patterns
+  **Tipp:** Achte besonders auf Knoten mit vielen Verbindungen — sie sind oft Schlüsselkonzepte oder versteckte Abhängigkeiten.
+
+  ### Thread of Thought
+  **Anleitung:** 1. Identifiziere den roten Faden durch den gesamten Kontext. 2. Verfolge diesen Faden systematisch und notiere Abzweigungen. 3. Synthetisiere am Ende alle Fäden zu einem kohärenten Ergebnis.
+  **Pattern:** context → thread → synthesis
+  **Tipp:** Nutze diese Methode bei langen Dokumenten oder Gesprächen, wo der Kontext leicht verloren geht. Der narrative Faden hält das Reasoning zusammen.
+
+  ### Self-Consistency Validation
+  **Anleitung:** 1. Löse das Problem mit mindestens drei unabhängigen Ansätzen. 2. Vergleiche die Ergebnisse systematisch auf Übereinstimmung. 3. Bei Abweichungen analysiere die Ursache und bilde einen Konsens.
+  **Pattern:** approaches → comparison → consensus
+  **Tipp:** Wenn alle Ansätze zum gleichen Ergebnis kommen, ist die Konfidenz hoch. Abweichungen zeigen oft die interessantesten Erkenntnisse.
+
+  ### Meta-Prompting Analysis
+  **Anleitung:** 1. Betrachte die aktuelle Herangehensweise aus der Vogelperspektive. 2. Analysiere, ob die gewählte Methodik zum Problem passt. 3. Optimiere den Ansatz basierend auf der Meta-Analyse.
+  **Pattern:** current → analysis → optimization
+  **Tipp:** Frage dich: "Löse ich das richtige Problem?" bevor du fragst "Löse ich das Problem richtig?"
+
+  ### Reasoning via Planning
+  **Anleitung:** 1. Baue ein mentales Modell des aktuellen und gewünschten Zustands. 2. Plane rueckwaerts vom Zielzustand zum aktuellen Zustand. 3. Validiere jeden Schritt gegen das Weltmodell und passe die Strategie an.
+  **Pattern:** model → planning → strategy
+  **Tipp:** Besonders wirksam bei Problemen mit klarem Zielzustand aber unklarem Weg. Das Weltmodell hilft, unrealistische Pläne früh zu erkennen.

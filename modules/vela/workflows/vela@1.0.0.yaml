@@ -1,0 +1,134 @@
+id: vela
+name: Vela Navigator
+version: "1.0.0"
+description: Zentraler Hub-Workflow — navigiert zu allen Vela-Funktionen.
+
+lifecycle:
+  allow_pause: true
+  auto_cancel_after: "30d"
+
+steps:
+  - id: hauptmenue
+    name: "Hauptmenü"
+    type: choice
+    prompt: |
+      Willkommen im Vela Navigator! Was möchtest du tun?
+    options:
+      - key: create-module
+        label: "Modul erstellen"
+        description: "Neues Vela-Modul als GitHub-Repo erstellen"
+        next: start-create-module
+      - key: create-agent
+        label: "Agent erstellen"
+        description: "Neue Agent-Persona mit Workflows und Tools definieren"
+        next: start-create-agent
+      - key: create-workflow
+        label: "Workflow erstellen"
+        description: "Neuen Workflow mit Steps und Parametern definieren"
+        next: start-create-workflow
+      - key: create-resource
+        label: "Resource anlegen"
+        description: "Schema, Beispiel oder Referenz-Material anlegen"
+        next: start-create-resource
+      - key: setup-project
+        label: "Projekt einrichten"
+        description: "Neues Projekt mit Tech-Stack und Konventionen aufsetzen"
+        next: start-setup-project
+      - key: team-management
+        label: "Team verwalten"
+        description: "Team-Mitglieder und Rollen im Projekt verwalten"
+        next: start-team-management
+      - key: status
+        label: "Status anzeigen"
+        description: "Workspace-Status mit Zähler aller Objekte"
+        next: show-status
+      - key: help
+        label: "Hilfe"
+        description: "Tool-Referenz und Nutzungshinweise"
+        next: show-help
+
+  - id: start-create-module
+    name: "Modul erstellen"
+    type: workflow
+    workflow_ref: create-module
+    next: hauptmenue
+
+  - id: start-create-agent
+    name: "Agent erstellen"
+    type: workflow
+    workflow_ref: create-agent
+    next: hauptmenue
+
+  - id: start-create-workflow
+    name: "Workflow erstellen"
+    type: workflow
+    workflow_ref: create-workflow
+    next: hauptmenue
+
+  - id: start-create-resource
+    name: "Resource anlegen"
+    type: workflow
+    workflow_ref: create-resource
+    next: hauptmenue
+
+  - id: start-setup-project
+    name: "Projekt einrichten"
+    type: workflow
+    workflow_ref: setup-project
+    next: hauptmenue
+
+  - id: start-team-management
+    name: "Team verwalten"
+    type: workflow
+    workflow_ref: team-management
+    next: hauptmenue
+
+  - id: show-status
+    name: "Status anzeigen"
+    type: execute
+    instructions: |
+      Rufe vela_status() auf und zeige dem User die Ergebnisse
+      übersichtlich formatiert an.
+    next: hauptmenue
+
+  - id: show-help
+    name: "Hilfe"
+    type: freeform
+    prompt: |
+      ## Vela Tool-Referenz
+
+      **Kontext-Tools:**
+      - `vela_set_project` — Projekt erstellen/aktualisieren
+      - `vela_get_project` — Projekt abrufen
+      - `vela_list_projects` — Projekte auflisten
+
+      **Memory-Tools:**
+      - `vela_remember` — Erinnerung speichern
+      - `vela_recall` — Erinnerungen suchen
+      - `vela_get_memory` — Memory-Inhalt abrufen
+      - `vela_forget` — Erinnerung löschen
+
+      **Workflow-Tools:**
+      - `vela_advance_workflow` — Workflow starten/fortsetzen
+      - `vela_workflow_status` — Run-Status abrufen
+      - `vela_list_workflows` — Workflows auflisten
+
+      **Agent & Resource:**
+      - `vela_list_agents` — Agenten auflisten
+      - `vela_list_resources` — Ressourcen auflisten
+
+      **Modul-Tools:**
+      - `vela_create_module` — Neues Modul-Repo auf GitHub erstellen
+      - `vela_push_to_module` — Datei in Modul-Repo pushen
+      - `vela_delete_from_module` — Datei aus Modul-Repo löschen
+      - `vela_clone_repo` — Bestehendes Repo als Modul installieren
+      - `vela_sync_repo` — Modul-Repo synchronisieren
+      - `vela_list_repos` — Installierte Module auflisten
+
+      **Admin-Tools:**
+      - `vela_validate` — YAML validieren
+      - `vela_save` — YAML speichern nach ~/.vela/
+      - `vela_status` — Workspace-Zähler
+
+      Möchtest du zurück zum Hauptmenü?
+    next: hauptmenue

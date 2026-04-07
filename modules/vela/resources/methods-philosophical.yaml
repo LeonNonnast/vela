@@ -1,0 +1,35 @@
+id: methods-philosophical
+name: Philosophische Elicitation-Methoden
+type: skill
+description: "2 Methoden für ethische Abwägungen und Komplexitätsreduktion"
+tags: [elicitation, philosophical, methods, vela]
+content: |
+  # Philosophische Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn Entscheidungen ethische Dimensionen haben oder unnötige Komplexität
+  eliminiert werden soll. Ideal für Architekturentscheidungen, Werteabwägungen
+  und Debugging.
+
+  ### Occam's Razor Application
+
+  **Anleitung:**
+  1. Alle Erklärungen oder Lösungsoptionen auflisten
+  2. Unnötige Komplexität und Annahmen eliminieren
+  3. Die einfachste valide Option wählen die alle Fakten erklärt
+
+  **Pattern:** options → simplification → selection
+
+  **Tipp:** Essenziell fürs Debugging: Der einfachste Bug ist meist der richtige. Bevor du eine komplexe Theorie verfolgst, prüfe die naheliegende Erklärung.
+
+  ### Trolley Problem Variations
+
+  **Anleitung:**
+  1. Das Dilemma klar formulieren mit konkreten Alternativen
+  2. Stakeholder und Konsequenzen jeder Option analysieren
+  3. Eigene Werte und Prioritäten explizit machen
+  4. Bewusst entscheiden und die Begründung dokumentieren
+
+  **Pattern:** dilemma → analysis → decision
+
+  **Tipp:** Wertvoll wenn es keine perfekte Lösung gibt. Die explizite Analyse macht die Trade-offs sichtbar und die Entscheidung nachvollziehbar.

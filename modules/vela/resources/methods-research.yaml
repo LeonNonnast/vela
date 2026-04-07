@@ -1,0 +1,41 @@
+id: methods-research
+name: Forschungs-Elicitation-Methoden
+type: skill
+description: "3 Methoden für evidenzbasierte Analyse und Bewertung"
+tags: [elicitation, research, methods, vela]
+content: |
+  # Forschungs-Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn Entscheidungen auf solider Evidenz basieren müssen, komplexe Informationsquellen bewertet werden sollen oder eine strukturierte Synthese aus verschiedenen Perspektiven benötigt wird. Diese Methoden eignen sich besonders für Technologiebewertungen, Architekturentscheidungen und strategische Analysen.
+
+  ### Literature Review Personas
+  **Anleitung:**
+  1. Drei Rollen zuweisen: Optimist (sucht Chancen und Stärken), Skeptiker (identifiziert Schwächen und Risiken), Synthesizer (integriert beide Sichtweisen)
+  2. Jede Persona analysiert die vorliegenden Quellen, Daten oder Vorschläge unabhängig aus ihrer Perspektive
+  3. Der Synthesizer führt die Erkenntnisse zu einer ausgewogenen Gesamtbewertung zusammen
+
+  **Pattern:** sources → critiques → synthesis
+
+  **Tipp:** Der Synthesizer sollte nicht einfach den Mittelweg nehmen, sondern aktiv die stärksten Argumente beider Seiten zu einer neuen Erkenntnis verbinden.
+
+  ### Thesis Defense Simulation
+  **Anleitung:**
+  1. Eine klare Hypothese oder These formulieren (z.B. "Microservices sind für dieses Projekt die richtige Architektur")
+  2. Ein Komitee aus kritischen Prüfern simulieren, die gezielt Schwachstellen, Gegenbeispiele und Alternativvorschläge einbringen
+  3. Die These verteidigen, dabei Einwände dokumentieren und die ursprüngliche These verfeinern oder verwerfen
+
+  **Pattern:** thesis → challenges → defense → refinements
+
+  **Tipp:** Die wertvollsten Erkenntnisse entstehen oft aus Einwänden, die nicht vollständig widerlegt werden können — sie zeigen echte Risiken oder Grenzen auf.
+
+  ### Comparative Analysis Matrix
+  **Anleitung:**
+  1. Alle verfügbaren Optionen auflisten und Bewertungskriterien definieren
+  2. Kriterien nach Wichtigkeit gewichten (z.B. Performance 30%, Wartbarkeit 25%, Kosten 20%, Skalierbarkeit 25%)
+  3. Jede Option gegen jedes gewichtete Kriterium bewerten und Gesamtscores berechnen
+  4. Ergebnis interpretieren und Empfehlung formulieren
+
+  **Pattern:** options → criteria → scores → recommendation
+
+  **Tipp:** Die Gewichtung der Kriterien ist oft aufschlussreicher als die finale Bewertung — sie macht implizite Prioritäten explizit.

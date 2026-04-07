@@ -1,0 +1,88 @@
+id: setup-project
+name: Projekt einrichten
+version: "1.0.0"
+description: Richte ein neues Projekt mit Tech-Stack und Konventionen ein.
+
+lifecycle:
+  allow_pause: true
+  auto_cancel_after: "7d"
+
+steps:
+  - id: projektdaten
+    name: "Schritt 1/3 — Projektdaten"
+    type: freeform
+    prompt: |
+      Lass uns ein neues Projekt einrichten!
+
+      Bitte gib folgende Daten an:
+      - **Slug**: Eindeutiger Projekt-Bezeichner (Kleinbuchstaben, Bindestriche, z.B. "mein-projekt")
+      - **Name**: Anzeigename des Projekts
+      - **Beschreibung**: Worum geht es in diesem Projekt?
+    capture:
+      - key: project_slug
+        label: "Projekt Slug"
+        required: true
+        input: text
+        elicit: always
+        placeholder: "z.B. mein-projekt"
+      - key: project_name
+        label: "Projektname"
+        required: true
+        input: text
+        elicit: always
+      - key: project_description
+        label: "Beschreibung"
+        input: text
+        elicit: if_missing
+
+  - id: techstack
+    name: "Schritt 2/3 — Tech-Stack und Konventionen"
+    type: dialog
+    mode: requirements
+    goal: "Tech-Stack und Konventionen für das Projekt definieren"
+    guidelines:
+      - Frage nach verwendeten Programmiersprachen und Versionen
+      - Frage nach Frameworks und Libraries
+      - Frage nach Build-Tools, Linters und Testing-Frameworks
+      - Frage nach Code-Style, Naming-Konventionen und Git-Workflow
+    prompt: |
+      Welchen Tech-Stack und welche Konventionen nutzt **{{steps.projektdaten.project_name}}**?
+
+      Beispiele:
+      - Sprachen: Python 3.12, TypeScript 5.x
+      - Frameworks: FastAPI, React, Next.js
+      - Tools: pytest, ESLint, Docker
+      - Konventionen: Code-Style, Naming, Git-Workflow
+
+      Beschreibe alles was relevant ist. Diese Informationen werden als
+      Projekt-Konventionen gespeichert und sind in allen Workflows verfügbar.
+    depends_on:
+      - step: projektdaten
+        fields: [project_name]
+    capture:
+      - key: tech_stack
+        label: "Tech-Stack"
+        source: output
+      - key: conventions
+        label: "Konventionen"
+        source: output
+
+  - id: speichern
+    name: "Schritt 3/3 — Projekt anlegen"
+    type: execute
+    instructions: |
+      Erstelle das Projekt mit vela_set_project:
+
+      vela_set_project(
+        slug="{{steps.projektdaten.project_slug}}",
+        name="{{steps.projektdaten.project_name}}",
+        description="{{steps.projektdaten.project_description}}",
+        conventions="Tech-Stack: {{steps.techstack.tech_stack}}\nKonventionen: {{steps.techstack.conventions}}"
+      )
+
+      Melde dem User den Erfolg und zeige die Projekt-Details.
+    depends_on:
+      - step: projektdaten
+        fields: [project_slug, project_name, project_description]
+      - step: techstack
+        fields: [tech_stack, conventions]

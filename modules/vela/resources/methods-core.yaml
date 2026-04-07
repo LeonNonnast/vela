@@ -1,0 +1,71 @@
+id: methods-core
+name: Kern-Elicitation-Methoden
+type: skill
+description: "6 fundamentale Methoden für analytisches Denken und Erkenntnisgewinn"
+tags: [elicitation, core, methods, vela]
+content: |
+  # Kern-Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn grundlegende Analyse und klares Denken gefragt sind. Diese Methoden bilden das Fundament für alle anderen Elicitation-Techniken und eignen sich für jede Phase eines Projekts — von der ersten Problemanalyse bis zur finalen Überprüfung.
+
+  ### First Principles Analysis
+  **Anleitung:**
+  1. Alle bestehenden Annahmen und Konventionen zum Thema auflisten
+  2. Jede Annahme hinterfragen: Ist das eine bewiesene Grundwahrheit oder eine übernommene Konvention?
+  3. Nur von den verifizierten Grundwahrheiten aus einen neuen Lösungsansatz aufbauen
+
+  **Pattern:** assumptions → truths → new approach
+
+  **Tipp:** Die meisten "technischen Einschränkungen" sind in Wirklichkeit organisatorische Konventionen, die hinterfragt werden können.
+
+  ### 5 Whys Deep Dive
+  **Anleitung:**
+  1. Das Problem oder Symptom klar benennen
+  2. Fragen: "Warum tritt das auf?" — Antwort dokumentieren
+  3. Auf die Antwort erneut "Warum?" fragen — mindestens 5 Mal wiederholen bis die Wurzelursache erreicht ist
+  4. Lösung an der Wurzelursache ansetzen, nicht am Symptom
+
+  **Pattern:** why chain → root cause → solution
+
+  **Tipp:** Oft verzweigt sich die Kette — mehrere parallele Ursachen sind normal. Alle Zweige verfolgen.
+
+  ### Socratic Questioning
+  **Anleitung:**
+  1. Offene, nicht-leitende Fragen formulieren, die zum Nachdenken anregen
+  2. Auf jede Antwort mit einer tiefergehenden Frage reagieren
+  3. Verborgene Annahmen, Widersprüche und Wissenslücken sichtbar machen
+
+  **Pattern:** questions → revelations → understanding
+
+  **Tipp:** Die besten sokratischen Fragen beginnen mit "Was meinst du genau mit...?" oder "Woher wissen wir, dass...?"
+
+  ### Critique and Refine
+  **Anleitung:**
+  1. Das zu bewertende Artefakt (Code, Design, Plan) vollständig sichten
+  2. Strukturiert Stärken und Schwächen identifizieren — beides gleichwertig dokumentieren
+  3. Für jede Schwäche einen konkreten Verbesserungsvorschlag erarbeiten und die verfeinerte Version erstellen
+
+  **Pattern:** strengths/weaknesses → improvements → refined
+
+  **Tipp:** Immer mit den Stärken beginnen — das schafft Kontext dafür, was bewahrt werden sollte.
+
+  ### Explain Reasoning
+  **Anleitung:**
+  1. Den eigenen Denkprozess Schritt für Schritt offenlegen
+  2. Bei jedem Schritt die zugrundeliegende Logik oder Evidenz benennen
+  3. Schlussfolgerung formulieren und prüfen, ob sie aus den Schritten logisch folgt
+
+  **Pattern:** steps → logic → conclusion
+
+  **Tipp:** Wenn ein Schritt nicht klar begründet werden kann, ist das ein Signal für eine versteckte Annahme.
+
+  ### Expand or Contract
+  **Anleitung:**
+  1. Zielgruppe und deren Vorwissen einschätzen
+  2. Detailgrad entsprechend anpassen: Expand für Einsteiger (mehr Kontext, Beispiele), Contract für Experten (Kernaussagen, Fachbegriffe)
+  3. Ergebnis gegen die Zielgruppe validieren und nachjustieren
+
+  **Pattern:** audience → adjustments → refined content
+
+  **Tipp:** Im Zweifel lieber zu viel Kontext als zu wenig — Experten überspringen Details schnell, Einsteiger bleiben ohne Kontext stecken.

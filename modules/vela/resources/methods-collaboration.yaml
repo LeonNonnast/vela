@@ -1,0 +1,60 @@
+id: methods-collaboration
+name: Kollaborative Elicitation-Methoden
+type: skill
+description: "10 Methoden für gemeinsame Problemlösung mit mehreren Perspektiven"
+tags: [elicitation, collaboration, methods, vela]
+content: |
+  # Kollaborative Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn ein Problem mehrere Perspektiven erfordert, Gruppenentscheidungen getroffen werden müssen oder blinde Flecken durch einseitiges Denken vermieden werden sollen. Ideal für Design-Reviews, Anforderungsanalysen und strategische Planung.
+
+  ### Stakeholder Round Table
+  **Anleitung:** 1. Identifiziere alle relevanten Stakeholder-Rollen. 2. Lasse jede Perspektive ihre Sicht darlegen. 3. Finde Gemeinsamkeiten und löse Konflikte auf.
+  **Pattern:** perspectives → synthesis → alignment
+  **Tipp:** Beginne mit der am wenigsten offensichtlichen Perspektive, um blinde Flecken früh aufzudecken.
+
+  ### Expert Panel Review
+  **Anleitung:** 1. Definiere das Fachgebiet und wähle passende Experten-Personas. 2. Lasse jeden Experten unabhängig analysieren. 3. Konsolidiere die Empfehlungen.
+  **Pattern:** expert views → consensus → recommendations
+  **Tipp:** Mische Generalisten und Spezialisten für ausgewogene Ergebnisse.
+
+  ### Debate Club Showdown
+  **Anleitung:** 1. Formuliere eine klare These. 2. Lasse Pro- und Contra-Seite argumentieren. 3. Ein Moderator bewertet und synthetisiert.
+  **Pattern:** thesis → antithesis → synthesis
+  **Tipp:** Zwinge die stärkere Seite, auch die Gegenposition zu vertreten.
+
+  ### User Persona Focus Group
+  **Anleitung:** 1. Erstelle realistische User-Personas mit unterschiedlichen Bedürfnissen. 2. Präsentiere den Vorschlag jeder Persona. 3. Sammle Reaktionen und priorisiere Bedenken.
+  **Pattern:** reactions → concerns → priorities
+  **Tipp:** Vergiss nicht die Edge-Case-Nutzer — sie decken die größten Schwächen auf.
+
+  ### Time Traveler Council
+  **Anleitung:** 1. Definiere vergangenes Ich (Erfahrungen), gegenwärtiges Ich (Entscheidung) und zukünftiges Ich (Konsequenzen). 2. Lasse jede Zeitversion beraten. 3. Triff die Entscheidung mit allen drei Perspektiven.
+  **Pattern:** past wisdom → present choice → future impact
+  **Tipp:** Das zukünftige Ich sollte sowohl Best-Case als auch Worst-Case betrachten.
+
+  ### Cross-Functional War Room
+  **Anleitung:** 1. Bringe PM, Engineer und Designer zusammen. 2. Jede Rolle benennt ihre Constraints. 3. Gemeinsam Trade-offs abwägen und balancierte Lösung finden.
+  **Pattern:** constraints → trade-offs → balanced solution
+  **Tipp:** Starte mit den härtестen Constraints — sie definieren den Lösungsraum.
+
+  ### Mentor and Apprentice
+  **Anleitung:** 1. Senior erklärt das Konzept ausführlich. 2. Junior stellt naive, grundlegende Fragen. 3. Durch die Erklärung entstehen tiefere Einsichten.
+  **Pattern:** explanation → questions → deeper understanding
+  **Tipp:** Die besten Fragen beginnen mit "Warum nicht einfach...?"
+
+  ### Good Cop Bad Cop
+  **Anleitung:** 1. Unterstützende Persona lobt und ermutigt. 2. Kritische Persona hinterfragt und attackiert. 3. Beide Sichten ergeben ein ausgewogenes Bild.
+  **Pattern:** encouragement → criticism → balanced view
+  **Tipp:** Wechsle die Reihenfolge — manchmal ist Kritik zuerst produktiver.
+
+  ### Improv Yes-And
+  **Anleitung:** 1. Erste Persona bringt eine Idee ein. 2. Jede weitere Persona baut darauf auf mit "Ja, und...". 3. Verfolge die Kette bis zum überraschenden Ergebnis.
+  **Pattern:** idea → build → build → surprising result
+  **Tipp:** Setze keine Grenzen in der Aufbauphase — filtern kommt später.
+
+  ### Customer Support Theater
+  **Anleitung:** 1. Wütender Kunde beschreibt sein Problem dramatisch. 2. Support untersucht systematisch die Ursache. 3. Gemeinsam Lösung finden und Prävention planen.
+  **Pattern:** complaint → investigation → resolution → prevention
+  **Tipp:** Je emotionaler der Kunde, desto mehr Edge Cases werden sichtbar.

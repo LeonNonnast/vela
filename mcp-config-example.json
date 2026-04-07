@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "vela": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "src.mcp.server", "--stdio"],
+      "cwd": "/path/to/vela",
+      "env": {
+        "DATABASE_URL": "sqlite+aiosqlite:///./vela.db",
+        "VELA_WORKFLOWS_DIR": "~/.vela/workflows",
+        "VELA_AGENTS_DIR": "~/.vela/agents",
+        "VELA_MODULES": ""
+      }
+    },
+    "vela-http": {
+      "url": "http://localhost:8000/mcp",
+      "headers": {
+        "X-Vela-Modules": "my-*,team-a-*,test-*"
+      }
+    }
+  }
+}

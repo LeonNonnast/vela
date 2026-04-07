@@ -1,0 +1,179 @@
+id: create-workflow
+name: Workflow erstellen
+version: "1.0.0"
+description: Erstelle einen neuen Workflow mit Steps und Parametern.
+
+lifecycle:
+  allow_pause: true
+  auto_cancel_after: "7d"
+
+tools:
+  - name: vela_list_repos
+    server: vela
+    description: Module auflisten
+  - name: vela_validate
+    server: vela
+    description: Workflow-YAML validieren
+  - name: vela_push_to_module
+    server: vela
+    description: Workflow in Modul pushen
+
+resources:
+  - ref: elicitation-cheatsheet
+
+steps:
+  - id: modul-waehlen
+    name: "Schritt 1/6 — Ziel-Modul wählen"
+    type: execute
+    tools: [vela_list_repos]
+    instructions: |
+      Zeige dem User seine installierten Module mit vela_list_repos().
+
+      Der User soll wählen, in welches Modul der neue Workflow
+      gespeichert werden soll. Gib den vollen Repo-Namen zurück
+      (z.B. "owner/my-workflows").
+
+      Falls keine Module vorhanden: empfehle den Workflow
+      "Modul erstellen" (create-module).
+    capture:
+      - key: target_repo
+        label: "Ziel-Modul (owner/name)"
+        required: true
+        source: output
+
+  - id: grunddaten
+    name: "Schritt 2/6 — Name und Beschreibung"
+    type: freeform
+    prompt: |
+      Lass uns einen neuen Workflow erstellen!
+
+      Bitte gib folgende Grunddaten an:
+      - **ID**: Eindeutiger Bezeichner (Kleinbuchstaben, Bindestriche, z.B. "code-review")
+      - **Name**: Anzeigename (z.B. "Code Review Workflow")
+      - **Version**: Semantische Version (Standard: 1.0.0)
+      - **Beschreibung**: Kurze Beschreibung des Workflow-Zwecks
+    capture:
+      - key: workflow_id
+        label: "Workflow ID"
+        required: true
+      - key: workflow_name
+        label: "Workflow Name"
+        required: true
+      - key: workflow_version
+        label: "Version"
+        default: "1.0.0"
+        input: text
+        elicit: if_missing
+      - key: workflow_description
+        label: "Beschreibung"
+
+  - id: parameter
+    name: "Schritt 3/6 — Parameter"
+    type: freeform
+    prompt: |
+      Braucht **{{steps.grunddaten.workflow_name}}** Parameter?
+
+      Parameter können beim Start übergeben werden (z.B. Projektname, Sprache).
+      Für jeden Parameter beschreibe:
+      - Name, Beschreibung, ob erforderlich, Standardwert
+
+      Antworte mit "keine" wenn keine Parameter benötigt werden.
+    depends_on:
+      - step: grunddaten
+        fields: [workflow_name]
+    capture:
+      - key: workflow_params
+        label: "Parameter-Beschreibung"
+
+  - id: steps-definieren
+    name: "Schritt 4/6 — Steps definieren"
+    type: dialog
+    mode: planning
+    goal: Steps für den Workflow definieren
+    guidelines:
+      - "**choice** — User wählt aus vordefinierten Optionen (mit branches für Verzweigungen)"
+      - "**freeform** — Freie Texteingabe mit optionaler Capture-Definition"
+      - "**execute** — Claude führt Aktionen aus (Code schreiben, Dateien erstellen, Tools aufrufen)"
+      - "**confirm** — Zusammenfassung anzeigen und Ja/Nein-Bestätigung einholen"
+      - "**dialog** — Strukturierter mehrstufiger Dialog mit Phasen oder Modi (brainstorming, requirements, planning, review, freeform)"
+      - "**workflow** — Sub-Workflow einbetten und starten"
+      - "**mcp_call** — Server-seitigen MCP-Tool-Aufruf ausführen"
+    prompt: |
+      Definiere die Steps für **{{steps.grunddaten.workflow_name}}**:
+
+      Plane gemeinsam die Schritte des Workflows. Für jeden Step beschreibe:
+      - ID und Typ (siehe Guidelines für verfügbare Typen)
+      - Was der Step tut und welche Daten er erfasst
+      - Abhängigkeiten zu anderen Steps
+      - Benötigte externe MCP-Tools (Step-Level `tools: [tool_name]`)
+
+      Frage auch, ob der Workflow externe MCP-Tools benötigt (z.B. von GitHub, Jira).
+      Falls ja, sammle diese als Workflow-Level `tools` mit name, server und description.
+
+      Berücksichtige auch dialog-Steps für komplexere Erarbeitungsphasen
+      und confirm-Steps für wichtige Entscheidungspunkte.
+    depends_on:
+      - step: grunddaten
+        fields: [workflow_name]
+    capture:
+      - key: workflow_steps
+        label: "Step-Beschreibungen"
+        required: true
+        source: output
+
+  - id: generieren
+    name: "Schritt 5/6 — YAML generieren"
+    type: execute
+    instructions: |
+      Generiere eine Workflow-YAML-Definition aus den gesammelten Daten:
+
+      - id: {{steps.grunddaten.workflow_id}}
+      - name: {{steps.grunddaten.workflow_name}}
+      - version: {{steps.grunddaten.workflow_version}}
+      - description: {{steps.grunddaten.workflow_description}}
+      - params: aus {{steps.parameter.workflow_params}} parsen
+      - tools: aus {{steps.steps-definieren.workflow_steps}} extrahieren (externe MCP-Tools mit name, server, description)
+      - steps: aus {{steps.steps-definieren.workflow_steps}} parsen
+
+      Workflow-Level `tools` deklarieren externe MCP-Tools die der Workflow braucht:
+      ```yaml
+      tools:
+        - name: create_issue
+          server: github
+          description: GitHub Issues erstellen
+      ```
+
+      Nutze das Workflow-Schema als Referenz (vela_list_resources für Schema).
+      Zeige dem User die generierte YAML zur Prüfung.
+    depends_on:
+      - step: grunddaten
+        fields: [workflow_id, workflow_name, workflow_version, workflow_description]
+      - step: parameter
+        fields: [workflow_params]
+      - step: steps-definieren
+        fields: [workflow_steps]
+    capture:
+      - key: generated_yaml
+        label: "Generierte YAML"
+        required: true
+
+  - id: speichern
+    name: "Schritt 6/6 — Validieren und pushen"
+    type: execute
+    tools: [vela_validate, vela_push_to_module]
+    instructions: |
+      Validiere und pushe den generierten Workflow:
+
+      1. vela_validate(type="workflow", content=<yaml>) zur Prüfung
+      2. Bei Fehlern: zeige Fehler und biete Korrektur an
+      3. Bei Erfolg: vela_push_to_module(
+           repo="{{steps.modul-waehlen.target_repo}}",
+           file_type="workflow",
+           content=<yaml>
+         )
+      4. Melde dem User den Erfolg mit Link zum GitHub-Repo
+    depends_on:
+      - step: modul-waehlen
+        fields: [target_repo]
+      - step: generieren
+        fields: [generated_yaml]

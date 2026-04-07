@@ -1,0 +1,482 @@
+# JSON Schema for Vela Workflow Definition (YAML format)
+# Version: 0.3.0 — extended with LLM-friendly documentation and examples
+#
+# PURPOSE:
+#   Defines a multi-step workflow that guides users through structured processes.
+#   Each workflow is registered as an MCP Prompt and can be started via
+#   vela_advance_workflow(workflow_id="...").
+#
+# STORAGE:
+#   - Bundled: modules/{module}/workflows/{id}@{version}.yaml
+#   - Examples: examples/workflows/{id}@{version}.yaml
+#   - User:    ~/.vela/workflows/{id}@{version}.yaml
+#   - Later sources override earlier ones (modules < examples < user).
+#
+# VERSIONING:
+#   Filename: {id}@{semver}.yaml (e.g. my-workflow@1.0.0.yaml)
+#   If no @version in filename, defaults to 1.0.0.
+#
+# MCP PROMPT NAME: vela_{id}
+#
+# MINIMAL EXAMPLE (freeform 2-step):
+#   id: quick-note
+#   name: Quick Note
+#   steps:
+#     - id: eingabe
+#       type: freeform
+#       prompt: Was möchtest du festhalten?
+#       capture:
+#         - key: note
+#           required: true
+#     - id: speichern
+#       type: execute
+#       instructions: Speichere die Notiz mit vela_remember.
+#
+# FULL EXAMPLE (choice + depends_on + capture + tools + routing):
+#   id: onboarding
+#   name: Projekt-Onboarding
+#   version: "1.0.0"
+#   description: Führt neue Nutzer durch die Projekteinrichtung
+#   params:
+#     - name: project_name
+#       label: Projektname
+#       required: true
+#       identity: true
+#   tools:
+#     - name: create_project
+#       server: devops
+#       description: Projekt in DevOps anlegen
+#     - name: search_repos
+#       server: github
+#       required: false
+#       description: Optional — Repos durchsuchen
+#   steps:
+#     - id: willkommen
+#       type: choice
+#       prompt: "Willkommen bei {{params.project_name}}! Was zuerst?"
+#       options:
+#         - key: setup
+#           label: Projekt konfigurieren
+#           next: tech-stack
+#         - key: team
+#           label: Team einrichten
+#           next: team-setup
+#     - id: tech-stack
+#       type: freeform
+#       prompt: Welchen Tech-Stack nutzt ihr?
+#       capture:
+#         - key: stack
+#           label: Tech-Stack
+#           required: true
+#           input: text
+#           elicit: if_missing
+#       next: zusammenfassung
+#     - id: team-setup
+#       type: freeform
+#       prompt: Wer ist im Team?
+#       capture:
+#         - key: team_members
+#       next: zusammenfassung
+#     - id: zusammenfassung
+#       type: confirm
+#       prompt: "Alles korrekt?"
+#       depends_on:
+#         - step: tech-stack
+#           fields: [stack]
+#         - step: team-setup
+#           fields: [team_members]
+
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Vela Workflow Definition
+type: object
+required: [id, name, steps]
+
+properties:
+  id:
+    type: string
+    pattern: "^[a-z0-9-]+$"
+    description: |
+      Unique workflow identifier, becomes MCP prompt name as vela_{id}.
+      Convention: lowercase with hyphens (e.g. "code-review")
+
+  version:
+    type: string
+    pattern: "^\\d+\\.\\d+\\.\\d+$"
+    default: "1.0.0"
+    description: |
+      Semantic version, also encoded in filename (workflow@1.0.0.yaml).
+      Multiple versions can coexist. Latest version is used by default.
+
+  name:
+    type: string
+    description: Display name shown in MCP prompt listing
+
+  description:
+    type: string
+    description: Shown in MCP prompt list for user selection
+
+  params:
+    type: array
+    description: |
+      Parameters that configure a workflow run.
+      Passed via vela_advance_workflow(params='{"key": "value"}').
+    items:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Parameter key used in templates as {{params.name}}
+        label:
+          type: string
+          description: Human-readable label for display
+        description:
+          type: string
+        required:
+          type: boolean
+          default: false
+        default:
+          description: Default value, supports dynamic templates like {{today}}
+        identity:
+          type: boolean
+          default: false
+          description: |
+            WHY: If true, this param is part of the unique run key.
+            Used for resume/lookup — same identity params = same run.
+            Example: project_name as identity means one run per project.
+        resolve:
+          type: boolean
+          default: false
+          description: |
+            WHY: If true, VELA searches memories for this param value at run start.
+            Enables automatic context injection from previous sessions.
+
+  context:
+    type: object
+    description: Automatically loaded context for all steps
+    properties:
+      auto:
+        type: array
+        items:
+          type: string
+          enum: [active_project, recent_memories, open_workflows]
+        description: Context sources to inject automatically
+
+  lifecycle:
+    type: object
+    description: Run lifecycle configuration
+    properties:
+      auto_archive_after:
+        type: string
+        description: Duration after completion before archiving (e.g. "30d")
+      auto_cancel_after:
+        type: string
+        description: Duration of inactivity before auto-cancel (e.g. "90d")
+      allow_pause:
+        type: boolean
+        default: true
+
+  tools:
+    type: array
+    description: |
+      External MCP tools required by this workflow.
+      Declared at workflow level so AI assistants can enable/disable them
+      before or during execution. Step-level tools (list of names) reference
+      entries declared here.
+    items:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Tool name as exposed by the MCP server (e.g. "create_issue")
+        server:
+          type: string
+          description: MCP server / connector ID providing this tool (e.g. "github")
+        description:
+          type: string
+          description: Why this workflow needs this tool
+        required:
+          type: boolean
+          default: true
+          description: "true = workflow cannot function without this tool, false = nice to have"
+
+  resources:
+    type: array
+    description: Resources available to all steps (inherited)
+    items:
+      type: object
+      required: [ref]
+      properties:
+        ref:
+          type: string
+          description: Resource ID or URI
+        inline:
+          type: boolean
+          description: "true=inline in prompt, false=URI reference, omit=auto (< 500 chars -> inline)"
+
+  steps:
+    type: array
+    minItems: 1
+    description: Ordered list of workflow steps
+    items:
+      type: object
+      required: [id, type]
+      properties:
+        id:
+          type: string
+          description: Unique step identifier within this workflow
+
+        name:
+          type: string
+          description: Human-readable step name (e.g. "Schritt 3/7 — Daten prüfen")
+
+        type:
+          type: string
+          enum: [choice, freeform, execute, confirm, workflow, mcp_call, dialog]
+          description: |
+            choice    — User selects from options (use with options array)
+            freeform  — Free-text input from user/Claude
+            execute   — Claude executes (code, files, etc.) — use with instructions
+            confirm   — Summary + yes/no confirmation
+            workflow   — Sub-workflow invocation — use with workflow_ref
+            mcp_call  — Server-side tool call (no LLM involved)
+            dialog    — Multi-phase guided dialog — use with mode or phases
+
+        prompt:
+          type: string
+          description: |
+            Template with variables: {{params.X}}, {{steps.X.Y}},
+            {{fetch.X}}, {{resolved.X}}, {{project.X}}
+
+        depends_on:
+          type: array
+          description: |
+            WHY: Principle of Least Context — only inject data the step actually needs.
+            Without depends_on, the step gets no data from previous steps.
+          items:
+            type: object
+            required: [step, fields]
+            properties:
+              step:
+                type: string
+                description: ID of the previous step
+              fields:
+                type: array
+                items:
+                  type: string
+                description: Which capture keys from that step to include
+
+        fetch:
+          type: array
+          description: Server-side data retrieval before step execution (VELA as MCP client)
+          items:
+            type: object
+            required: [key, source, action]
+            properties:
+              key:
+                type: string
+              source:
+                type: string
+                description: Mounted MCP server namespace
+              action:
+                type: string
+                description: Tool name on the mounted server
+              params:
+                type: object
+                additionalProperties: true
+
+        tools:
+          type: array
+          items:
+            type: string
+          description: External MCP tools visible to Claude in this step
+
+        capture:
+          type: array
+          description: |
+            Structured data fields to save for this step.
+            Each field can define an elicitation strategy via `input`.
+          items:
+            type: object
+            required: [key]
+            properties:
+              key:
+                type: string
+                description: State key for this captured value
+              label:
+                type: string
+                description: Human-readable label shown in elicitation UI
+              type:
+                type: string
+                enum: [string, boolean, date, number]
+                default: string
+              required:
+                type: boolean
+                default: false
+              source:
+                type: string
+                enum: [output, param]
+                default: output
+
+              input:
+                type: string
+                enum: [text, number, boolean, select, multi-select, confirm]
+                description: |
+                  UI input type for ctx.elicit() during vela_advance_workflow.
+                  WHY: Enables structured data collection beyond free text.
+                  If omitted, VELA only validates — no elicitation triggered
+                  unless the field is required and missing.
+
+              options:
+                type: array
+                description: Static options for select/multi-select input types
+                items:
+                  type: object
+                  required: [key, label]
+                  properties:
+                    key:
+                      type: string
+                    label:
+                      type: string
+
+              suggest:
+                type: boolean
+                default: false
+                description: If true, Claude generates options dynamically
+
+              placeholder:
+                type: string
+
+              default:
+                description: Pre-selected default value
+
+              elicit:
+                type: string
+                enum: [always, if_missing, never]
+                default: if_missing
+                description: |
+                  WHY: Controls when VELA asks vs. accepts provided data.
+                  always     — Always show UI, even if value exists
+                  if_missing — Only ask if field is missing/invalid
+                  never      — Never ask, only validate
+
+        options:
+          type: array
+          description: Available choices (only for type=choice)
+          items:
+            type: object
+            required: [key, label]
+            properties:
+              key:
+                type: string
+              label:
+                type: string
+              description:
+                type: string
+              next:
+                type: string
+                description: Step ID to jump to when selected
+
+        next:
+          type: string
+          description: Explicit next step ID (overrides sequential order)
+
+        notes:
+          type: boolean
+          default: true
+
+        instructions:
+          type: string
+          description: Detailed instructions for Claude (type=execute)
+
+        delegate:
+          type: string
+          enum: [subagent]
+
+        workflow_ref:
+          type: string
+          description: Workflow ID to invoke as sub-workflow (type=workflow)
+
+        params_mapping:
+          type: object
+          additionalProperties:
+            type: string
+          description: Map parent state to sub-workflow params
+
+        mcp_tool:
+          type: string
+          description: Tool name for server-side execution (type=mcp_call)
+
+        mcp_source:
+          type: string
+
+        mcp_params:
+          type: object
+          additionalProperties: true
+
+        resources:
+          type: array
+          description: Step-level resources (merged with workflow-level)
+          items:
+            type: object
+            required: [ref]
+            properties:
+              ref:
+                type: string
+              inline:
+                type: boolean
+
+        on_error:
+          type: object
+          properties:
+            retry:
+              type: integer
+              minimum: 0
+            fallback:
+              type: string
+            abort:
+              type: boolean
+            message:
+              type: string
+
+        mode:
+          type: string
+          enum: [brainstorming, requirements, planning, review, freeform]
+          description: |
+            Built-in dialog mode (only for type=dialog).
+            Each mode provides a predefined sequence of phases.
+            brainstorming — Diverge → Converge → Synthesize
+            requirements  — Context → Questions → Prioritize → Specify
+            planning      — Goals → Breakdown → Dependencies → Approval
+            review        — Understand → Evaluate → Decide
+            freeform      — No phases, just goal + guidelines
+
+        goal:
+          type: string
+          description: Overall goal of the dialog step (shown in prompt header)
+
+        guidelines:
+          type: array
+          items:
+            type: string
+          description: General guidelines applied across all phases
+
+        phases:
+          type: array
+          description: |
+            Explicit phase definitions (override mode).
+            Each phase is a mini-step within the dialog.
+          items:
+            type: object
+            required: [id, guideline]
+            properties:
+              id:
+                type: string
+                description: Unique phase identifier within this step
+              name:
+                type: string
+                description: Human-readable phase name
+              guideline:
+                type: string
+                description: Instructions for this phase

@@ -1,0 +1,23 @@
+id: methods-index
+name: Elicitation-Methoden Index
+type: reference
+description: Kompaktübersicht aller 50 Elicitation-Methoden nach Kategorie
+tags: [elicitation, index, vela]
+content: |
+  # Elicitation-Methoden Index
+
+  | Kategorie | # | Beispiele |
+  |-----------|---|-----------|
+  | collaboration | 10 | Stakeholder Round Table, Expert Panel |
+  | advanced | 6 | Tree of Thoughts, Graph of Thoughts |
+  | competitive | 3 | Red Team vs Blue Team, Shark Tank |
+  | technical | 5 | Architecture Decision Records, Rubber Duck |
+  | creative | 6 | SCAMPER, Reverse Engineering |
+  | research | 3 | Literature Review, Thesis Defense |
+  | risk | 5 | Pre-mortem, Devil's Advocate |
+  | core | 6 | First Principles, 5 Whys |
+  | learning | 2 | Feynman Technique, Active Recall |
+  | philosophical | 2 | Occam's Razor, Trolley Problem |
+  | retrospective | 2 | Hindsight Reflection, Lessons Learned |
+
+  **50 Methoden gesamt.** Lade Details: `vela_get_resource(id="methods-{kategorie}")`

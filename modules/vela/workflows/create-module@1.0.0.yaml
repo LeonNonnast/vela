@@ -1,0 +1,84 @@
+id: create-module
+name: Modul erstellen
+version: "1.0.0"
+description: Erstelle ein neues Vela-Modul als GitHub-Repository.
+
+lifecycle:
+  allow_pause: true
+  auto_cancel_after: "7d"
+
+tools:
+  - name: vela_create_module
+    server: vela
+    description: GitHub-Repository als Vela-Modul erstellen
+
+steps:
+  - id: grunddaten
+    name: "Schritt 1/3 — Modul-Daten"
+    type: freeform
+    prompt: |
+      Lass uns ein neues Vela-Modul erstellen!
+
+      Ein Modul ist ein GitHub-Repo, das Workflows, Agents und Resources
+      für einen bestimmten Kontext bündelt.
+
+      Bitte gib folgende Daten an:
+      - **Name**: Repository-Name (Kleinbuchstaben, Bindestriche, z.B. "my-workflows")
+      - **Beschreibung**: Kurze Beschreibung des Moduls
+    capture:
+      - key: module_name
+        label: "Modul-Name (repo name)"
+        required: true
+        input: text
+        placeholder: "z.B. my-vela-workflows"
+      - key: module_description
+        label: "Beschreibung"
+        input: text
+      - key: module_private
+        label: "Sichtbarkeit"
+        input: select
+        elicit: always
+        default: "true"
+        options:
+          - key: "true"
+            label: "Privat"
+          - key: "false"
+            label: "Öffentlich"
+
+  - id: bestaetigen
+    name: "Schritt 2/3 — Bestätigung"
+    type: confirm
+    prompt: |
+      Modul wird erstellt:
+
+      - **Name**: {{steps.grunddaten.module_name}}
+      - **Beschreibung**: {{steps.grunddaten.module_description}}
+      - **Sichtbarkeit**: {{steps.grunddaten.module_private}}
+
+      Ein GitHub-Repo wird angelegt, mit vela.yaml initialisiert
+      und als Modul in deinem Workspace registriert.
+    depends_on:
+      - step: grunddaten
+        fields: [module_name, module_description, module_private]
+
+  - id: erstellen
+    name: "Schritt 3/3 — Modul erstellen"
+    type: execute
+    tools: [vela_create_module]
+    instructions: |
+      Erstelle das Modul auf GitHub mit vela_create_module:
+
+      - name: "{{steps.grunddaten.module_name}}"
+      - description: "{{steps.grunddaten.module_description}}"
+      - private: {{steps.grunddaten.module_private}}
+
+      Zeige dem User das Ergebnis mit GitHub-Link und erkläre,
+      dass er jetzt Workflows/Agents/Resources in dieses Modul
+      erstellen kann.
+    depends_on:
+      - step: grunddaten
+        fields: [module_name, module_description, module_private]
+    capture:
+      - key: result
+        label: "Ergebnis"
+        source: output

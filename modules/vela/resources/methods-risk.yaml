@@ -1,0 +1,60 @@
+id: methods-risk
+name: Risiko-Elicitation-Methoden
+type: skill
+description: "5 Methoden für Risikoanalyse und Fehlerprävention"
+tags: [elicitation, risk, methods, vela]
+content: |
+  # Risiko-Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn Projekte, Systeme oder Entscheidungen auf potenzielle Schwachstellen geprüft werden müssen. Diese Methoden helfen, blinde Flecken aufzudecken, bevor sie zu echten Problemen werden. Besonders wertvoll vor Releases, bei Architekturänderungen oder strategischen Entscheidungen.
+
+  ### Pre-mortem Analysis
+  **Anleitung:**
+  1. Sich vorstellen, das Projekt ist gescheitert — vollständig und spektakulär
+  2. Alle möglichen Ursachen für dieses Scheitern auflisten, ohne zu filtern
+  3. Die wahrscheinlichsten und schwerwiegendsten Ursachen priorisieren und konkrete Gegenmaßnahmen definieren
+
+  **Pattern:** failure scenario → causes → prevention
+
+  **Tipp:** Die Methode funktioniert besser als klassische Risikoanalyse, weil die Annahme des Scheiterns psychologische Barrieren abbaut.
+
+  ### Failure Mode Analysis
+  **Anleitung:**
+  1. System in seine Kernkomponenten zerlegen (Module, Services, Schnittstellen)
+  2. Für jede Komponente systematisch durchspielen: Wie könnte sie versagen? Was wären die Auswirkungen?
+  3. Schwere und Wahrscheinlichkeit bewerten, dann Schutzmaßnahmen für kritische Fehlermodi entwickeln
+
+  **Pattern:** components → failures → prevention
+
+  **Tipp:** Besonders auf Schnittstellen zwischen Komponenten achten — dort treten die meisten unerwarteten Fehler auf.
+
+  ### Devil's Advocate
+  **Anleitung:**
+  1. Die aktuelle Lösung oder Entscheidung klar formulieren
+  2. Bewusst und konsequent die Gegenposition einnehmen — jede Annahme infrage stellen
+  3. Identifizierte Schwächen dokumentieren und die ursprüngliche Position damit stärken oder anpassen
+
+  **Pattern:** assumptions → challenges → strengthening
+
+  **Tipp:** Die Rolle des Advocatus Diaboli muss ernst genommen werden. Halbherzige Gegenargumente liefern keine wertvollen Erkenntnisse.
+
+  ### Risk Identification
+  **Anleitung:**
+  1. Risikokategorien definieren: technisch, organisatorisch, zeitlich, finanziell, extern
+  2. Pro Kategorie strukturiertes Brainstorming: Was könnte schiefgehen?
+  3. Jeden identifizierten Risikopunkt mit Eintrittswahrscheinlichkeit und Auswirkung bewerten, dann Mitigationsstrategien zuordnen
+
+  **Pattern:** categories → risks → mitigations
+
+  **Tipp:** Externe Risiken (Abhängigkeiten, Marktveränderungen, regulatorische Änderungen) werden am häufigsten übersehen.
+
+  ### Chaos Monkey Scenarios
+  **Anleitung:**
+  1. Gezielt eine Systemkomponente, Annahme oder Ressource entfernen oder stören
+  2. Beobachten wie das Gesamtsystem reagiert — wo entstehen Kaskadeneffekte?
+  3. Aus den Beobachtungen Härtungsmaßnahmen ableiten und Resilienzmechanismen einbauen
+
+  **Pattern:** break → observe → harden
+
+  **Tipp:** Mit den wahrscheinlichsten Ausfällen beginnen (z.B. Datenbankverbindung weg, API-Timeout, volle Festplatte), dann zu unwahrscheinlicheren übergehen.

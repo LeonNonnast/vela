@@ -1,0 +1,162 @@
+id: create-agent
+name: Agent erstellen
+version: "1.0.0"
+description: Erstelle eine neue Agent-Persona mit Workflows und Tools.
+
+lifecycle:
+  allow_pause: true
+  auto_cancel_after: "7d"
+
+tools:
+  - name: vela_list_repos
+    server: vela
+    description: Module auflisten
+  - name: vela_validate
+    server: vela
+    description: Agent-YAML validieren
+  - name: vela_push_to_module
+    server: vela
+    description: Agent in Modul pushen
+
+steps:
+  - id: modul-waehlen
+    name: "Schritt 1/6 — Ziel-Modul wählen"
+    type: execute
+    tools: [vela_list_repos]
+    instructions: |
+      Zeige dem User seine installierten Module mit vela_list_repos().
+
+      Der User soll wählen, in welches Modul der neue Agent
+      gespeichert werden soll. Gib den vollen Repo-Namen zurück
+      (z.B. "owner/my-workflows").
+
+      Falls keine Module vorhanden: empfehle den Workflow
+      "Modul erstellen" (create-module).
+    capture:
+      - key: target_repo
+        label: "Ziel-Modul (owner/name)"
+        required: true
+        source: output
+
+  - id: grunddaten
+    name: "Schritt 2/6 — Grunddaten"
+    type: freeform
+    prompt: |
+      Lass uns einen neuen Agenten erstellen!
+
+      Bitte gib folgende Grunddaten an:
+      - **ID**: Eindeutiger Bezeichner (Kleinbuchstaben, Bindestriche, z.B. "code-reviewer")
+      - **Name**: Anzeigename (z.B. "Code Reviewer")
+      - **Begrüßung**: Optionale Begrüßung wenn der Agent aktiviert wird
+    capture:
+      - key: agent_id
+        label: "Agent ID"
+        required: true
+      - key: agent_name
+        label: "Agent Name"
+        required: true
+      - key: agent_greeting
+        label: "Begrüßung"
+
+  - id: persona
+    name: "Schritt 3/6 — Persona"
+    type: dialog
+    goal: Agent-Persona mit Rolle, Kommunikationsstil und Regeln definieren
+    phases:
+      - id: rolle
+        name: Rolle definieren
+        guideline: "Definiere Rolle und Expertise des Agenten"
+      - id: kommunikation
+        name: Kommunikationsstil
+        guideline: "Beschreibe den Kommunikationsstil"
+      - id: regeln
+        name: Verhaltensregeln
+        guideline: "Formuliere Verhaltensregeln und Einschränkungen"
+    prompt: |
+      Definiere die Persona für **{{steps.grunddaten.agent_name}}**:
+
+      Wir erarbeiten die Persona in drei Phasen:
+      1. Rolle und Expertise des Agenten
+      2. Kommunikationsstil (formell/informell, Sprache)
+      3. Verhaltensregeln und Einschränkungen
+
+      Am Ende fassen wir alles zu einer zusammenhängenden Persona zusammen.
+    depends_on:
+      - step: grunddaten
+        fields: [agent_name]
+    capture:
+      - key: agent_persona
+        label: "Persona"
+        required: true
+        source: output
+
+  - id: workflows
+    name: "Schritt 4/6 — Workflows zuordnen"
+    type: freeform
+    prompt: |
+      Welche Workflows soll **{{steps.grunddaten.agent_name}}** nutzen können?
+
+      Verfügbare Workflows findest du mit `vela_list_workflows()`.
+
+      Gib eine komma-separierte Liste von Workflow-IDs an, oder "keine" wenn der Agent keine Workflows braucht.
+    depends_on:
+      - step: grunddaten
+        fields: [agent_name]
+    capture:
+      - key: agent_workflows
+        label: "Workflow-IDs"
+        input: text
+        suggest: true
+
+  - id: tools
+    name: "Schritt 5/6 — Tools festlegen"
+    type: freeform
+    prompt: |
+      Welche MCP-Tools soll **{{steps.grunddaten.agent_name}}** immer verfügbar haben?
+
+      Beispiele: vela_remember, vela_recall, vela_set_project, vela_list_resources
+
+      Gib eine komma-separierte Liste an, oder "keine" für keine speziellen Tools.
+    depends_on:
+      - step: grunddaten
+        fields: [agent_name]
+    capture:
+      - key: agent_tools
+        label: "Tool-IDs"
+        input: text
+        suggest: true
+
+  - id: generieren
+    name: "Schritt 6/6 — YAML generieren und pushen"
+    type: execute
+    tools: [vela_validate, vela_push_to_module]
+    instructions: |
+      Generiere eine Agent-YAML-Definition aus den gesammelten Daten:
+
+      - id: {{steps.grunddaten.agent_id}}
+      - name: {{steps.grunddaten.agent_name}}
+      - persona: {{steps.persona.agent_persona}}
+      - greeting: {{steps.grunddaten.agent_greeting}}
+      - workflows: {{steps.workflows.agent_workflows}} (als YAML-Liste parsen)
+      - tools: {{steps.tools.agent_tools}} (als YAML-Liste parsen)
+
+      Zeige dem User die generierte YAML und dann:
+      1. `vela_validate(type="agent", content=<yaml>)` zur Prüfung
+      2. Bei Fehlern: zeige Fehler und biete Korrektur an
+      3. Bei Erfolg: `vela_push_to_module(
+           repo="{{steps.modul-waehlen.target_repo}}",
+           file_type="agent",
+           content=<yaml>
+         )`
+      4. Melde dem User den Erfolg mit Link zum GitHub-Repo
+    depends_on:
+      - step: modul-waehlen
+        fields: [target_repo]
+      - step: grunddaten
+        fields: [agent_id, agent_name, agent_greeting]
+      - step: persona
+        fields: [agent_persona]
+      - step: workflows
+        fields: [agent_workflows]
+      - step: tools
+        fields: [agent_tools]

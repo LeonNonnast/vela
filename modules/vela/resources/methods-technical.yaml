@@ -1,0 +1,35 @@
+id: methods-technical
+name: Technische Elicitation-Methoden
+type: skill
+description: "5 Methoden für technische Analyse und Architekturentscheidungen"
+tags: [elicitation, technical, methods, vela]
+content: |
+  # Technische Elicitation-Methoden
+
+  ## Wann einsetzen
+  Wenn technische Entscheidungen mit langfristigen Konsequenzen getroffen werden müssen. Diese Methoden helfen bei Architekturwahl, Performance-Optimierung, Sicherheitsanalyse und technischem Debugging auf hohem Niveau.
+
+  ### Architecture Decision Records
+  **Anleitung:** 1. Definiere die Architekturentscheidung und den Kontext. 2. Lasse verschiedene Architekten-Personas je eine Option mit expliziten Trade-offs vorschlagen. 3. Bewerte jede Option gegen definierte Kriterien und dokumentiere die Entscheidung mit Begründung.
+  **Pattern:** options → trade-offs → decision → rationale
+  **Tipp:** Dokumentiere immer auch die verworfenen Optionen und warum sie abgelehnt wurden. Dein zukünftiges Ich wird dankbar sein, wenn die gleiche Frage erneut aufkommt.
+
+  ### Rubber Duck Debugging Evolved
+  **Anleitung:** 1. Erkläre das Problem einer einfachen Gummienten-Persona in Alltagssprache. 2. Wiederhole die Erklärung für eine technisch versierte Ente mit Fachbegriffen. 3. Erkläre es einer Experten-Ente, die bohrende Detailfragen stellt. Der Aha-Moment kommt oft in der Lücke zwischen den Erklärungsebenen.
+  **Pattern:** simple → detailed → technical → aha
+  **Tipp:** Die Methode funktioniert, weil jede Abstraktionsebene andere Annahmen sichtbar macht. Wenn du auf einer Ebene nicht erklären kannst, hast du die Schwachstelle gefunden.
+
+  ### Algorithm Olympics
+  **Anleitung:** 1. Implementiere mindestens drei verschiedene Ansätze für das gleiche Problem. 2. Definiere klare Benchmark-Kriterien (Laufzeit, Speicher, Lesbarkeit, Wartbarkeit). 3. Lasse die Ansätze gegeneinander antreten und küre den Gewinner mit Begründung.
+  **Pattern:** implementations → benchmarks → winner
+  **Tipp:** Der schnellste Algorithmus ist nicht immer der beste. Beziehe Wartbarkeit und Verständlichkeit in die Bewertung ein — Code wird öfter gelesen als geschrieben.
+
+  ### Security Audit Personas
+  **Anleitung:** 1. Hacker-Persona sucht aktiv nach Schwachstellen und Angriffsvektoren. 2. Verteidiger-Persona schlägt Gegenmaßnahmen und Härtungen vor. 3. Auditor-Persona prüft Compliance und dokumentiert Findings systematisch.
+  **Pattern:** vulnerabilities → defenses → compliance
+  **Tipp:** Beginne mit dem OWASP Top 10 als Checkliste für den Hacker. Der Auditor sollte jeden Finding mit Schweregrad und Empfehlung dokumentieren.
+
+  ### Performance Profiler Panel
+  **Anleitung:** 1. DB-Experte analysiert Queries, Indizes und Datenbankzugriffsmuster. 2. Frontend-Spezialist untersucht Bundle-Größe, Rendering und User Experience. 3. DevOps diagnostiziert Infrastruktur, Skalierung und Monitoring-Lücken.
+  **Pattern:** symptoms → analysis → optimizations
+  **Tipp:** Performance-Probleme sind selten dort, wo man sie vermutet. Lasse jeden Experten unabhängig analysieren, bevor ihr die Ergebnisse zusammenführt — so vermeidet ihr Confirmation Bias.

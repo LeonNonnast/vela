@@ -1,0 +1,22 @@
+id: brain-methods-index
+name: Brainstorming-Techniken Index
+type: reference
+description: Kompaktübersicht aller 62 Brainstorming-Techniken nach Kategorie
+tags: [brainstorming, index, vela]
+content: |
+  # Brainstorming-Techniken Index
+
+  | Kategorie | # | Beispiele |
+  |-----------|---|-----------|
+  | collaborative | 5 | Yes-And, Brain Writing |
+  | creative | 11 | What If, First Principles |
+  | deep | 8 | Five Whys, Morphological |
+  | introspective | 6 | Inner Child, Shadow Work |
+  | structured | 7 | SCAMPER, Six Hats |
+  | theatrical | 6 | Time Travel Talk Show, Alien Anthropologist |
+  | wild | 8 | Chaos Engineering, Anti-Solution |
+  | biomimetic | 3 | Nature's Solutions, Ecosystem Thinking |
+  | quantum | 3 | Observer Effect, Entanglement Thinking |
+  | cultural | 4 | Indigenous Wisdom, Fusion Cuisine |
+
+  **62 Techniken gesamt.** Lade Details: `vela_get_resource(id="brain-{kategorie}")`

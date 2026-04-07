@@ -1,0 +1,330 @@
+id: demo-steptype-test
+name: "Demo: Alle Step-Types testen"
+version: "1.0.0"
+description: >
+  Test-Workflow der alle 7 Step-Types durchläuft.
+  Ideal zum Testen verschiedener User-Journeys (DB-Speicherung, lokales Speichern,
+  Sub-Workflows, Dialog-Modi, MCP-Calls).
+
+tools:
+  - name: vela_remember
+    server: vela
+    description: Notiz im Memory speichern
+  - name: vela_validate
+    server: vela
+    description: YAML validieren
+  - name: vela_save
+    server: vela
+    description: Datei speichern
+
+params:
+  - name: tester_name
+    label: "Name des Testers"
+    description: "Wird zur Identifikation paralleler Runs verwendet"
+    required: true
+    identity: true
+  - name: project_name
+    label: "Projektname"
+    description: "Vorbelegter Projektname (überspringt Freeform-Eingabe)"
+    required: false
+    default: ""
+    resolve: true
+  - name: verbose
+    label: "Ausführliche Ausgabe"
+    description: "Wenn true, zeigt jeder Step zusätzliche Debug-Infos"
+    required: false
+    default: "false"
+  - name: tag
+    label: "Test-Tag"
+    description: "Freitext-Tag für Gruppierung der Testergebnisse"
+    required: false
+    default: "demo"
+
+lifecycle:
+  allow_pause: true
+  auto_cancel_after: "7d"
+
+steps:
+  # ── 1. CHOICE — Einstieg mit Branching ─────────────────────────
+  - id: welcome
+    name: "1/8 — Choice: Testmodus wählen"
+    type: choice
+    prompt: |
+      Willkommen zum Vela Step-Type Demo, **{{params.tester_name}}**!
+
+      Dieser Workflow testet alle 7 Step-Types nacheinander.
+      Wähle einen Testmodus:
+    options:
+      - key: full
+        label: "Komplett-Test"
+        description: "Alle Steps durchlaufen inkl. Sub-Workflow"
+        next: freeform-step
+      - key: quick
+        label: "Schnell-Test"
+        description: "Nur Freeform + Confirm + Execute"
+        next: freeform-step
+      - key: dialog-only
+        label: "Nur Dialog"
+        description: "Direkt zum Brainstorming-Dialog springen"
+        next: dialog-step
+
+  # ── 2. FREEFORM — Freie Texteingabe mit Capture ────────────────
+  - id: freeform-step
+    name: "2/8 — Freeform: Testdaten eingeben"
+    type: freeform
+    prompt: |
+      **Freeform-Step** — Freie Texteingabe mit strukturiertem Capture.
+
+      Gib ein paar Testdaten ein:
+      - Einen Projektnamen (frei wählbar)
+      - Eine kurze Beschreibung
+      - Deine Lieblingsfarbe (wird per Elicitation abgefragt)
+      - Tags (Mehrfachauswahl)
+
+      Vorbelegt: project_name={{params.project_name}}, tag={{params.tag}}
+    capture:
+      - key: test_name
+        label: "Projektname"
+        required: true
+        input: text
+        elicit: if_missing
+        placeholder: "z.B. Mein Demo-Projekt"
+        default: "{{params.project_name}}"
+      - key: test_description
+        label: "Beschreibung"
+        input: text
+        elicit: if_missing
+      - key: test_color
+        label: "Lieblingsfarbe"
+        input: select
+        elicit: always
+        options:
+          - key: rot
+            label: "Rot"
+          - key: blau
+            label: "Blau"
+          - key: gruen
+            label: "Grün"
+          - key: gelb
+            label: "Gelb"
+      - key: test_tags
+        label: "Tags"
+        input: multi-select
+        elicit: always
+        options:
+          - key: frontend
+            label: "Frontend"
+          - key: backend
+            label: "Backend"
+          - key: infra
+            label: "Infrastruktur"
+          - key: docs
+            label: "Dokumentation"
+
+  # ── 3. CONFIRM — Bestätigung mit Template-Referenz ─────────────
+  - id: confirm-step
+    name: "3/8 — Confirm: Daten bestätigen"
+    type: confirm
+    prompt: |
+      **Confirm-Step** — Prüfe die eingegebenen Daten:
+
+      - **Tester**: {{params.tester_name}}
+      - **Projektname**: {{steps.freeform-step.test_name}}
+      - **Beschreibung**: {{steps.freeform-step.test_description}}
+      - **Farbe**: {{steps.freeform-step.test_color}}
+      - **Tags**: {{steps.freeform-step.test_tags}}
+
+      Stimmen diese Daten? (Ja/Nein)
+    depends_on:
+      - step: freeform-step
+        fields: [test_name, test_description, test_color, test_tags]
+
+  # ── 4. CHOICE — Speichermodus wählen (DB vs Lokal) ────────────
+  - id: storage-choice
+    name: "4/8 — Choice: Wo speichern?"
+    type: choice
+    prompt: |
+      **Storage-Choice** — Wohin sollen die Testdaten gespeichert werden?
+
+      Wähle den Speicherort:
+    options:
+      - key: db
+        label: "Datenbank"
+        description: "Speichert via vela_remember in die DB"
+        next: execute-db-step
+      - key: local
+        label: "Lokal"
+        description: "Speichert via vela_save als YAML nach ~/.vela/"
+        next: execute-local-step
+      - key: both
+        label: "Beides"
+        description: "Erst DB, dann lokal"
+        next: execute-db-step
+
+  # ── 5a. EXECUTE — In DB speichern ──────────────────────────────
+  - id: execute-db-step
+    name: "5a/8 — Execute: In DB speichern"
+    type: execute
+    tools: [vela_remember]
+    instructions: |
+      **Execute-Step (DB)** — Speichere die Testdaten in der Vela-DB.
+
+      Nutze vela_remember um folgendes zu speichern:
+
+      vela_remember(
+        content="Demo-Test von {{params.tester_name}}: {{steps.freeform-step.test_name}} — {{steps.freeform-step.test_description}} (Farbe: {{steps.freeform-step.test_color}}, Tags: {{steps.freeform-step.test_tags}})",
+        tags=["demo", "{{params.tag}}"]
+      )
+
+      Bestätige dem User, dass die Daten in der Datenbank gespeichert wurden.
+    depends_on:
+      - step: freeform-step
+        fields: [test_name, test_description, test_color, test_tags]
+    capture:
+      - key: memory_result
+        label: "Speicher-Ergebnis"
+        source: output
+    next: check-both-storage
+
+  # ── Routing: Wenn "both" gewählt, weiter zu lokal ─────────────
+  - id: check-both-storage
+    name: "Routing: Auch lokal?"
+    type: choice
+    prompt: |
+      DB-Speicherung abgeschlossen.
+
+      Soll auch lokal gespeichert werden?
+      (Bei "Beides" wähle "Ja")
+    options:
+      - key: ja
+        label: "Ja, auch lokal speichern"
+        next: execute-local-step
+      - key: nein
+        label: "Nein, weiter zum Dialog"
+        next: dialog-step
+
+  # ── 5b. EXECUTE — Lokal speichern ──────────────────────────────
+  - id: execute-local-step
+    name: "5b/8 — Execute: Lokal speichern"
+    type: execute
+    tools: [vela_validate, vela_save]
+    instructions: |
+      **Execute-Step (Lokal)** — Speichere ein Test-Artefakt lokal.
+
+      Generiere eine minimale Test-Workflow-YAML:
+
+      ```yaml
+      id: demo-generated-{{params.tag}}
+      name: "Vom Demo generiert ({{params.tester_name}})"
+      version: "1.0.0"
+      description: "Auto-generiert: {{steps.freeform-step.test_name}} — {{steps.freeform-step.test_description}}"
+      steps:
+        - id: hello
+          type: freeform
+          prompt: "Dieser Workflow wurde vom Demo-Test generiert."
+      ```
+
+      1. Validiere mit vela_validate(type="workflow", content=<yaml>)
+      2. Speichere mit vela_save(type="workflow", content=<yaml>)
+      3. Berichte dem User, dass die Datei unter ~/.vela/workflows/ liegt
+    depends_on:
+      - step: freeform-step
+        fields: [test_name, test_description]
+    capture:
+      - key: save_result
+        label: "Speicher-Ergebnis"
+        source: output
+    next: dialog-step
+
+  # ── 6. DIALOG — Brainstorming-Session ───────────────────────────
+  - id: dialog-step
+    name: "6/8 — Dialog: Brainstorming"
+    type: dialog
+    mode: brainstorming
+    goal: "Kreative Ideen für das Testprojekt sammeln"
+    guidelines:
+      - Ermutige wilde und unkonventionelle Ideen
+      - Baue auf den Ideen des Users auf
+      - Fasse am Ende die Top-3 Ideen zusammen
+    phases:
+      - id: ideation
+        name: "Ideenfindung"
+        guideline: "Sammle möglichst viele Ideen ohne Bewertung"
+      - id: bewertung
+        name: "Bewertung"
+        guideline: "Bewerte die Ideen nach Machbarkeit und Kreativität"
+      - id: auswahl
+        name: "Top-3 Auswahl"
+        guideline: "Wähle die besten 3 Ideen aus und formuliere sie aus"
+    prompt: |
+      **Dialog-Step (Brainstorming)** — Mehrstufige Konversation.
+
+      Lass uns kreative Ideen brainstormen!
+      Thema: Was könnte man mit "{{steps.freeform-step.test_name}}" alles machen?
+
+      Wir durchlaufen 3 Phasen:
+      1. Ideenfindung — einfach drauflos!
+      2. Bewertung — was ist realistisch?
+      3. Top-3 — die besten Ideen auswählen
+    depends_on:
+      - step: freeform-step
+        fields: [test_name]
+    capture:
+      - key: top_ideas
+        label: "Top-3 Ideen"
+        required: true
+        source: output
+
+  # ── 7. MCP_CALL — Server-seitiger Tool-Aufruf ──────────────────
+  - id: mcp-call-step
+    name: "7/8 — MCP Call: Status abrufen"
+    type: mcp_call
+    mcp_tool: vela_status
+    mcp_params: {}
+    prompt: |
+      **MCP-Call-Step** — Server-seitiger Tool-Aufruf.
+
+      Ruft automatisch vela_status() auf, um den aktuellen
+      Workspace-Status abzufragen. Kein User-Input nötig.
+    capture:
+      - key: status_result
+        label: "Vela-Status"
+        source: output
+
+  # ── 8. WORKFLOW — Sub-Workflow aufrufen ─────────────────────────
+  - id: subworkflow-step
+    name: "8/8 — Workflow: Sub-Workflow (Agent erstellen)"
+    type: workflow
+    workflow_ref: create-agent
+    prompt: |
+      **Workflow-Step** — Delegiert an den Sub-Workflow "Agent erstellen".
+
+      Jetzt wird der komplette create-agent Workflow als
+      Sub-Workflow gestartet. Du erstellst dabei einen echten
+      Agent als Teil dieses Demo-Tests.
+
+  # ── Abschluss ───────────────────────────────────────────────────
+  - id: zusammenfassung
+    name: "Zusammenfassung"
+    type: freeform
+    prompt: |
+      **Demo abgeschlossen, {{params.tester_name}}!**
+
+      Test-Tag: {{params.tag}}
+
+      Getestete Step-Types:
+      1. **Choice** — Testmodus gewählt
+      2. **Freeform** — Eingabe: {{steps.freeform-step.test_name}}
+      3. **Confirm** — Daten bestätigt
+      4. **Choice** — Speichermodus gewählt
+      5. **Execute (DB/Lokal)** — Daten gespeichert
+      6. **Dialog** — Brainstorming: {{steps.dialog-step.top_ideas}}
+      7. **MCP Call** — Status abgerufen
+      8. **Workflow** — Sub-Workflow "Agent erstellen" durchlaufen
+
+      Alle Step-Types wurden durchlaufen. Der Workflow ist fertig!
+    depends_on:
+      - step: freeform-step
+        fields: [test_name]
+      - step: dialog-step
+        fields: [top_ideas]

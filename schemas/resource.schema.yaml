@@ -1,0 +1,51 @@
+# JSON Schema for Vela Resource Definition (YAML format)
+# Version: 0.1.0 — based on Brainstorming Session 2026-03-09, Section 6
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Vela Resource Definition
+type: object
+required: [id, name, type, content]
+
+properties:
+  id:
+    type: string
+    pattern: "^[a-z0-9-]+$"
+    description: Unique resource identifier
+
+  name:
+    type: string
+    description: Display name for the resource
+
+  type:
+    type: string
+    enum: [schema, example, scaffold, skill, convention, reference]
+    description: |
+      Resource type:
+        schema     — JSON/YAML schema definitions
+        example    — Code examples and snippets
+        scaffold   — Project/file scaffolds and templates
+        skill      — Reusable skill definitions
+        convention — Coding conventions and style guides
+        reference  — Reference data (enums, lookups, etc.)
+
+  description:
+    type: string
+    description: Short description of the resource
+
+  content:
+    type: string
+    description: Resource content (Markdown, code, YAML, etc.)
+
+  mime_type:
+    type: string
+    default: "text/plain"
+    description: MIME type of the content
+
+  tags:
+    type: array
+    items:
+      type: string
+    description: Tags for filtering and discovery
+
+  uri_pattern:
+    type: string
+    description: Custom URI (default is vela://{type}/{id})
