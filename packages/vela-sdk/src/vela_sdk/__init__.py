@@ -35,6 +35,18 @@ try:
 except ImportError:
     VelaWorkflows = None  # type: ignore[assignment,misc]
 
+# LangChain integration (lazy import to avoid hard dep)
+try:
+    from vela_sdk.langchain import VelaToolkit
+except ImportError:
+    VelaToolkit = None  # type: ignore[assignment,misc]
+
+# Azure AI Agents integration (lazy import to avoid hard dep)
+try:
+    from vela_sdk.azure_agents import VelaToolset
+except ImportError:
+    VelaToolset = None  # type: ignore[assignment,misc]
+
 __all__ = [
     "AdvanceResult",
     "AnyStepDefinition",
@@ -49,6 +61,8 @@ __all__ = [
     "McpCallStep",
     "StepDefinition",
     "StepType",
+    "VelaToolkit",
+    "VelaToolset",
     "VelaWorkflows",
     "WorkflowDefinition",
     "WorkflowEngine",

@@ -64,6 +64,8 @@ export type {
   ElicitResult,
 } from "./mcp/mcp-server.js";
 export { HeadlessAdapter } from "./adapters/headless.js";
+export { AzureAgentsAdapter, createVelaAzureToolset } from "./adapters/azure-agents.js";
+export type { AzureFunctionToolDefinition, VelaAzureToolsetResult } from "./adapters/azure-agents.js";
 
 export type {
   WorkflowResolver,

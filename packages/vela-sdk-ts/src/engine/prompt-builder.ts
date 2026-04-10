@@ -83,6 +83,7 @@ export class PromptBuilder {
     workflowDef: WorkflowDefinition,
     step: AnyStepDefinition,
     resourceResolver: ResourceResolver,
+    forceInline = false,
   ): string[] {
     // Merge: workflow-level first, step-level overrides
     const merged = new Map<string, { ref: string; inline?: boolean | null }>();
@@ -107,7 +108,9 @@ export class PromptBuilder {
       }
 
       // Determine inline vs reference
-      let shouldInline = resRef.inline;
+      // Delegate steps always inline — the subagent is a separate session
+      // and cannot load resources on demand.
+      let shouldInline = forceInline || resRef.inline;
       if (shouldInline == null) {
         shouldInline = resource.content.length < 500;
       }
@@ -187,12 +190,15 @@ export class PromptBuilder {
       parts.push("");
     }
 
-    // Resources
+    // Resources — force inline for delegate steps (subagent has no resource access)
+    const isDelegate =
+      step.type === "execute" && "delegate" in step && !!step.delegate;
     if (resourceResolver) {
       const resourceParts = PromptBuilder.assembleResources(
         workflowDef,
         step,
         resourceResolver,
+        isDelegate,
       );
       if (resourceParts.length > 0) {
         parts.push(...resourceParts);

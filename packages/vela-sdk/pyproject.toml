@@ -29,7 +29,9 @@ Documentation = "https://github.com/Arineo-AI/vela/tree/main/packages/vela-sdk"
 [project.optional-dependencies]
 sqlalchemy = ["sqlalchemy[asyncio]>=2.0", "aiosqlite>=0.21.0"]
 fastmcp = ["fastmcp>=3.0.0b1"]
-all = ["vela-sdk[sqlalchemy,fastmcp]"]
+langchain = ["langchain-core>=0.3.0"]
+azure-agents = ["azure-ai-agents>=1.0.0"]
+all = ["vela-sdk[sqlalchemy,fastmcp,langchain,azure-agents]"]
 
 [build-system]
 requires = ["hatchling"]
@@ -45,6 +47,7 @@ testpaths = ["tests"]
 [dependency-groups]
 dev = [
     "fastmcp>=3.0.0b1",
+    "langchain-core>=1.2.28",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
 ]

@@ -18,6 +18,14 @@
     "./adapters/mcp-sdk": {
       "import": { "types": "./dist/adapters/mcp-sdk.d.ts", "default": "./dist/adapters/mcp-sdk.js" },
       "require": { "types": "./dist/adapters/mcp-sdk.d.cts", "default": "./dist/adapters/mcp-sdk.cjs" }
+    },
+    "./adapters/langchain": {
+      "import": { "types": "./dist/adapters/langchain.d.ts", "default": "./dist/adapters/langchain.js" },
+      "require": { "types": "./dist/adapters/langchain.d.cts", "default": "./dist/adapters/langchain.cjs" }
+    },
+    "./adapters/azure-agents": {
+      "import": { "types": "./dist/adapters/azure-agents.d.ts", "default": "./dist/adapters/azure-agents.js" },
+      "require": { "types": "./dist/adapters/azure-agents.d.cts", "default": "./dist/adapters/azure-agents.cjs" }
     }
   },
   "files": ["dist"],
@@ -37,18 +45,21 @@
     "tsup": "^8.0.0",
     "vitest": "^2.0.0",
     "fastmcp": "^3.0.0",
-    "@modelcontextprotocol/sdk": "^1.12.0"
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@langchain/core": "^0.3.0"
   },
   "peerDependencies": {
     "fastmcp": ">=3.0.0",
-    "@modelcontextprotocol/sdk": ">=1.0.0"
+    "@modelcontextprotocol/sdk": ">=1.0.0",
+    "@langchain/core": ">=0.3.0"
   },
   "peerDependenciesMeta": {
     "fastmcp": { "optional": true },
-    "@modelcontextprotocol/sdk": { "optional": true }
+    "@modelcontextprotocol/sdk": { "optional": true },
+    "@langchain/core": { "optional": true }
   },
   "license": "MIT",
   "author": "Arineo GmbH",
-  "keywords": ["mcp", "workflow", "state-machine", "fastmcp", "ai", "agent"],
+  "keywords": ["mcp", "workflow", "state-machine", "fastmcp", "langchain", "ai", "agent"],
   "engines": { "node": ">=20" }
 }
