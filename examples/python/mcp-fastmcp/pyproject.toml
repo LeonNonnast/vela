@@ -1,0 +1,10 @@
+[project]
+name = "vela-example-mcp-fastmcp"
+version = "0.1.0"
+description = "Minimal MCP server with Vela workflows"
+requires-python = ">=3.12"
+dependencies = ["vela-sdk[fastmcp]>=0.1.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,13 @@
+[project]
+name = "vela-example-langchain"
+version = "0.1.0"
+description = "LangChain ReAct agent with Vela workflow tools"
+requires-python = ">=3.12"
+dependencies = [
+    "vela-sdk[langchain,fastmcp]>=0.1.0",
+    "langchain-anthropic>=0.3.0",
+    "langgraph>=0.2.0",
+]
+
+[tool.uv.sources]
+vela-sdk = { path = "../../../packages/vela-sdk", editable = true }

@@ -1,0 +1,56 @@
+id: project-setup
+version: "1.0.0"
+name: Project Setup
+description: Guided setup for a new project.
+params:
+  - name: owner
+    label: Project Owner
+    required: true
+    identity: true
+steps:
+  - id: choose-type
+    type: choice
+    name: Choose Project Type
+    prompt: |
+      Welcome, {{params.owner}}! What type of project are you setting up?
+    options:
+      - key: web
+        label: Web Application
+      - key: api
+        label: API Service
+      - key: cli
+        label: CLI Tool
+    capture:
+      - key: project_type
+        label: Selected project type
+        source: output
+
+  - id: describe
+    type: freeform
+    name: Describe Your Project
+    prompt: |
+      Tell me about your {{state.project_type}} project.
+    capture:
+      - key: project_name
+        label: Project Name
+        required: true
+        input: text
+        elicit: if_missing
+      - key: description
+        label: Description
+        source: output
+    depends_on:
+      - step: choose-type
+        fields: [project_type]
+
+  - id: confirm
+    type: confirm
+    name: Confirm Setup
+    prompt: |
+      Ready to create **{{state.project_name}}**?
+
+      - **Type**: {{state.project_type}}
+      - **Owner**: {{params.owner}}
+    depends_on:
+      - step: describe
+        fields: [project_name]

@@ -6,6 +6,7 @@ __pycache__/
 dist/
 build/
 docs
+.bin
 
 node_modules
 
@@ -14,7 +15,6 @@ node_modules
 _bmad
 _bmad-output
 .speckit
-examples
 # Virtual environment
 .venv/
 
