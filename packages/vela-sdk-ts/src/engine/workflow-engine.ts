@@ -20,10 +20,13 @@ import {
 import type {
   AnyStepDefinition,
   CaptureDefinition,
+  DelegateStepDefinition,
   LifecycleDefinition,
   WorkflowDefinition,
 } from "../schemas/workflow.js";
 import type { WorkflowStore } from "../storage/store.js";
+import { resolveDelegate } from "../delegate/registry.js";
+import type { DelegateContext } from "../delegate/types.js";
 
 // ---------------------------------------------------------------------------
 // Options types
@@ -40,6 +43,16 @@ export interface AdvanceOptions {
   stepOutput?: string | null;
   notes?: string | null;
   resourceResolver?: ResourceResolver;
+  /**
+   * Cancellation signal propagated to delegate-step handlers. Non-delegate
+   * step types ignore this — they are advanced synchronously.
+   */
+  signal?: AbortSignal;
+  /**
+   * Optional structured-log sink forwarded to delegate-step handlers.
+   * Defaults to a no-op when omitted.
+   */
+  log?: (msg: string, meta?: unknown) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -171,7 +184,7 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
     workflowDef: WorkflowDefinition,
     options?: AdvanceOptions,
   ): Promise<AdvanceResult> {
-    const stepOutput = options?.stepOutput ?? null;
+    let stepOutput = options?.stepOutput ?? null;
     const notes = options?.notes ?? null;
     const resourceResolver = options?.resourceResolver;
 
@@ -189,6 +202,25 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
         status: WorkflowRunStatus.COMPLETED,
       });
       return { run, completed: true };
+    }
+
+    // Delegate steps run their registered handler in-place. The handler's
+    // returned value is JSON-stringified and treated as `stepOutput` so the
+    // normal capture pipeline kicks in below. Any caller-provided
+    // `options.stepOutput` is ignored for delegate steps — the handler is
+    // the source of truth.
+    if (currentStep.type === "delegate") {
+      const delegateResult = await this.executeDelegateStep(
+        currentStep,
+        run,
+        workflowDef,
+        options?.signal,
+        options?.log,
+      );
+      stepOutput =
+        typeof delegateResult === "string"
+          ? delegateResult
+          : JSON.stringify(delegateResult ?? null);
     }
 
     // Dialog steps have their own advancement logic
@@ -388,6 +420,86 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
 
   resolveTemplates(text: string, context: Record<string, unknown>): string {
     return PromptBuilder.resolveTemplates(text, context);
+  }
+
+  // -----------------------------------------------------------------------
+  // Private: executeDelegateStep
+  // -----------------------------------------------------------------------
+
+  /**
+   * Run the registered handler for a `delegate` step.
+   *
+   * Builds a `DelegateContext` from the current run + workflow definition,
+   * runs the handler, and returns its result. The caller normalises the
+   * result to `stepOutput` (string) for downstream capture parsing.
+   *
+   * @throws if no handler is registered for `step.delegate`.
+   */
+  private async executeDelegateStep(
+    step: DelegateStepDefinition,
+    run: WorkflowRunState,
+    workflowDef: WorkflowDefinition,
+    signal: AbortSignal | undefined,
+    log: ((msg: string, meta?: unknown) => void) | undefined,
+  ): Promise<unknown> {
+    const handler = resolveDelegate(step.delegate);
+    if (!handler) {
+      throw new Error(
+        `No handler registered for delegate '${step.delegate}' (step '${step.id}')`,
+      );
+    }
+
+    // Snapshot the template context so resolveVars can chase params, state,
+    // and prior step captures without re-reading the store.
+    const templateCtx = PromptBuilder.buildTemplateContext(workflowDef, run);
+
+    const captureSink: Record<string, unknown> = {};
+    const ctx: DelegateContext = {
+      resolveVars: (v) => DefaultWorkflowEngine.resolveVarsDeep(v, templateCtx),
+      setCapture: (key, value) => {
+        captureSink[key] = value;
+      },
+      signal,
+      log: log ?? ((_msg, _meta) => {}),
+    };
+
+    const result = await handler(
+      { id: step.id, delegate: step.delegate, task: step.task ?? null },
+      ctx,
+    );
+
+    // If the handler used `ctx.setCapture` AND returned an object, merge —
+    // explicit captures win. If it returned a non-object, wrap as
+    // `{ result: ... }` so captures can still target keys.
+    if (Object.keys(captureSink).length > 0) {
+      if (result && typeof result === "object" && !Array.isArray(result)) {
+        return { ...(result as Record<string, unknown>), ...captureSink };
+      }
+      return { result, ...captureSink };
+    }
+    return result;
+  }
+
+  /**
+   * Deep-walk `value` and resolve `{{...}}` templates in every string. Used
+   * by `DelegateContext.resolveVars` so handlers can pass arbitrarily
+   * nested `task` payloads through without manual interpolation.
+   */
+  static resolveVarsDeep(value: unknown, context: Record<string, unknown>): unknown {
+    if (typeof value === "string") {
+      return PromptBuilder.resolveTemplates(value, context);
+    }
+    if (Array.isArray(value)) {
+      return value.map((v) => DefaultWorkflowEngine.resolveVarsDeep(v, context));
+    }
+    if (value !== null && typeof value === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        out[k] = DefaultWorkflowEngine.resolveVarsDeep(v, context);
+      }
+      return out;
+    }
+    return value;
   }
 
   // -----------------------------------------------------------------------

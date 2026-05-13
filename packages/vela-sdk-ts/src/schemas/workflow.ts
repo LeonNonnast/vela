@@ -20,6 +20,7 @@ export const stepTypeSchema = z.enum([
   "dialog",
   "workflow",
   "mcp_call",
+  "delegate",
 ]);
 
 export type StepType = z.infer<typeof stepTypeSchema>;
@@ -203,6 +204,23 @@ export const mcpCallStepSchema = baseStepSchema.extend({
 
 export type McpCallStepDefinition = z.infer<typeof mcpCallStepSchema>;
 
+/**
+ * Delegate step — execution is forwarded to a runtime-registered handler.
+ *
+ * `delegate` names the handler (e.g. "engine", "shell"); `task` is the
+ * free-form payload passed to it. The engine runs the handler when the
+ * workflow advances onto this step, then applies `capture` against the
+ * handler's returned result. See `delegate/registry.ts` and Anhang F of
+ * the AI-engine refactoring plan.
+ */
+export const delegateStepSchema = baseStepSchema.extend({
+  type: z.literal("delegate"),
+  delegate: z.string(),
+  task: z.unknown().optional(),
+});
+
+export type DelegateStepDefinition = z.infer<typeof delegateStepSchema>;
+
 // ---------------------------------------------------------------------------
 // AnyStepDefinition — discriminated union on "type"
 // ---------------------------------------------------------------------------
@@ -215,6 +233,7 @@ export const anyStepSchema = z.discriminatedUnion("type", [
   dialogStepSchema,
   workflowStepSchema,
   mcpCallStepSchema,
+  delegateStepSchema,
 ]);
 
 export type AnyStepDefinition = z.infer<typeof anyStepSchema>;

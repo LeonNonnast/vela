@@ -46,6 +46,19 @@ export { resourceDefinitionSchema, resourceReferenceSchema } from "./schemas/res
 export type { ResourceDefinition, ResourceReference } from "./schemas/resource.js";
 
 // ---------------------------------------------------------------------------
+// Delegate (Anhang F)
+// ---------------------------------------------------------------------------
+export {
+  registerDelegate,
+  resolveDelegate,
+  clearDelegates,
+} from "./delegate/registry.js";
+export type { DelegateContext, DelegateHandler } from "./delegate/types.js";
+export { makeDelegateStep } from "./delegate/step.js";
+export { delegateStepSchema } from "./schemas/workflow.js";
+export type { DelegateStepDefinition } from "./schemas/workflow.js";
+
+// ---------------------------------------------------------------------------
 // Storage
 // ---------------------------------------------------------------------------
 export type { WorkflowStore, CreateRunOptions, UpdateStepOptions, ListActiveOptions } from "./storage/store.js";
