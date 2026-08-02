@@ -59,7 +59,8 @@
     "@langchain/core": { "optional": true }
   },
   "license": "MIT",
-  "author": "Arineo GmbH",
+  "author": "Leon Nonnast",
+  "repository": { "type": "git", "url": "git+https://github.com/LeonNonnast/vela.git", "directory": "packages/vela-sdk-ts" },
   "keywords": ["mcp", "workflow", "state-machine", "fastmcp", "langchain", "ai", "agent"],
   "engines": { "node": ">=20" }
 }

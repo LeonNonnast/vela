@@ -5,7 +5,7 @@ description = "Workflow engine SDK for FastMCP servers — add structured, multi
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
-authors = [{ name = "Arineo GmbH" }]
+authors = [{ name = "Leon Nonnast" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
@@ -22,9 +22,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Arineo-AI/vela"
-Repository = "https://github.com/Arineo-AI/vela"
-Documentation = "https://github.com/Arineo-AI/vela/tree/main/packages/vela-sdk"
+Homepage = "https://github.com/LeonNonnast/vela"
+Repository = "https://github.com/LeonNonnast/vela"
+Documentation = "https://github.com/LeonNonnast/vela/tree/main/packages/vela-sdk"
 
 [project.optional-dependencies]
 sqlalchemy = ["sqlalchemy[asyncio]>=2.0", "aiosqlite>=0.21.0"]
