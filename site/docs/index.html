@@ -211,6 +211,8 @@
       <a href="#core-steps" class="sidebar-link">Step Types</a>
       <a href="#core-templating" class="sidebar-link">Templating</a>
       <a href="#core-identity" class="sidebar-link">Identity-Based Resume</a>
+      <a href="#core-pause" class="sidebar-link">Pausing a Run</a>
+      <a href="#core-lifecycle" class="sidebar-link">Lifecycle Checks</a>
 
       <div class="sidebar-label">Python SDK</div>
       <a href="#py-install" class="sidebar-link">Installation</a>
@@ -324,6 +326,12 @@ steps:
 
         <h3 id="core-pause">Pausing a Run</h3>
         <p><code>engine.pauseRun(run, workflowDef)</code> / <code>engine.pause_run(run, workflow_def)</code> explicitly parks an <code>ACTIVE</code> run as <code>PAUSED</code>. It raises if the run isn't <code>ACTIVE</code>, or if the workflow's <code>lifecycle.allow_pause</code> is <code>false</code> (it defaults to <code>true</code>, so most workflows are pausable unless they opt out). There's no separate resume method — <code>advance()</code> already treats <code>PAUSED</code> the same as <code>ACTIVE</code>, so calling it again is the resume path.</p>
+
+        <h3 id="core-lifecycle">Lifecycle Checks</h3>
+        <p>A workflow's <code>lifecycle</code> block declares two duration-based rules — <code>auto_archive_after</code> (e.g. <code>"30d"</code>) and <code>auto_cancel_after</code> (e.g. <code>"90d"</code>) — evaluated against a run's <code>updated_at</code>/<code>updatedAt</code> timestamp. <code>engine.checkLifecycle(run, workflowDef.lifecycle)</code> / <code>engine.check_lifecycle(run, workflow_def.lifecycle)</code> returns the status a run <em>should</em> transition to (<code>CANCELLED</code> for an <code>ACTIVE</code> run past <code>auto_cancel_after</code>, <code>ARCHIVED</code> for a <code>COMPLETED</code> run past <code>auto_archive_after</code>), or <code>None</code>/<code>null</code> if nothing applies.</p>
+        <div class="callout callout--warn">
+          <strong>You call this, not the engine.</strong> <code>checkLifecycle</code>/<code>check_lifecycle</code> is a pure check — neither SDK runs a background sweep or scheduler. If you want <code>auto_archive_after</code>/<code>auto_cancel_after</code> enforced, your own code has to call it (e.g. on a cron, or lazily whenever a run is loaded) and persist the returned status yourself via <code>store.update_step</code>/<code>updateStep</code>. See <a href="#known-limitations">Known Limitations</a>.
+        </div>
       </section>
 
       <div class="section-divider"></div>
@@ -687,31 +695,19 @@ const vela = new VelaWorkflows({
 
       <section id="known-limitations">
         <h2>Known Limitations</h2>
-        <p>Documented honestly rather than silently — these are things the schema or old docs suggest work today but don't yet, in either SDK unless noted.</p>
+        <p>Documented honestly rather than silently — these are gaps that remain a deliberate design choice or an architectural boundary, not a to-do. (Older entries about <code>{{resolved.x}}</code>, <code>locale</code>, and <code>allow_pause</code> have been folded into <a href="#core-templating">Templating</a>, <a href="#ts-locale">Locale &amp; Tool Names</a>, and <a href="#core-pause">Pausing a Run</a> — they're fully implemented now, not limitations.)</p>
         <ul class="limitations-list">
-          <li>
-            <span class="tag">Both SDKs</span>
-            <code>{{project.x}}</code> resolves only if you pass a <code>projectDataResolver</code>/<code>project_data_resolver</code> — a synchronous <code>(project_id) -&gt; dict | None</code> callback, same shape as <code>resourceResolver</code>. The SDK has no project data store of its own (that lives in the separate Vela Server product, not this OSS SDK), so without a resolver <code>{{project.x}}</code> stays <code>{}</code> rather than raising. See <a href="#core-templating">Templating</a>.
-          </li>
           <li>
             <span class="tag">Both SDKs</span>
             <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code>) only auto-applies for step types the engine executes in-process: TypeScript's <code>delegate</code> step, and, in both SDKs, <code>mcp_call</code> and the <code>fetch</code> step field. For step types the calling agent executes (<code>execute</code>, <code>freeform</code>, <code>choice</code>, <code>confirm</code>, dialog phases, <code>workflow</code>), the engine never runs the risky action itself — there's no way for it to, since those steps hand control back to a human/agent turn — so your own calling code still has to invoke <code>on_error</code> and act on the result. This isn't a gap that will close; it's inherent to which step types run synchronously in-engine versus round-trip through the caller.
           </li>
           <li>
             <span class="tag">Both SDKs</span>
-            <code>locale=</code> previously only covered the adapter layer's own strings (elicitation prompts, <code>next_action</code> text). The workflow engine's own step-prompt assembly and dialog-phase headers are now locale-aware too — <code>assemble_prompt</code>/<code>assemblePrompt</code> and <code>advance</code> accept a <code>locale</code> parameter (defaulting to English) in both SDKs.
+            <code>checkLifecycle</code>/<code>check_lifecycle</code> (<a href="#core-lifecycle">Lifecycle Checks</a>) is a pure function, not a scheduler — neither engine sweeps runs in the background to apply <code>auto_archive_after</code>/<code>auto_cancel_after</code>. Your own code has to call it and persist the result. This is a deliberate scope boundary (the SDK has no process to run a background job in), not something planned to change.
           </li>
           <li>
             <span class="tag">Both SDKs</span>
-            <code>auto_archive_after</code> is now enforced by <code>check_lifecycle</code>/<code>checkLifecycle</code>, same as <code>auto_cancel_after</code>: a <code>COMPLETED</code> run older than the configured duration is reported as <code>ARCHIVED</code>. Note that, like <code>auto_cancel_after</code>, this is a check your own scheduled code must call — neither engine runs a background sweep.
-          </li>
-          <li>
-            <span class="tag">Both SDKs</span>
-            <code>allow_pause</code> is now enforced: <code>pauseRun</code>/<code>pause_run</code> explicitly parks an <code>ACTIVE</code> run as <code>PAUSED</code>, raising if <code>lifecycle.allow_pause</code> is <code>false</code> or the run isn't <code>ACTIVE</code>. See <a href="#core-pause">Pausing a Run</a>. There's still no separate resume method — <code>advance()</code> already treats <code>PAUSED</code> the same as <code>ACTIVE</code> — and no background sweep for <code>auto_archive_after</code>/<code>auto_cancel_after</code>; those remain checks your own scheduled code has to call.
-          </li>
-          <li>
-            <span class="tag">Both SDKs</span>
-            <code>{{resolved.x}}</code> has no documented spec beyond its name in the schema comments, so this SDK made a design choice rather than discovering an existing one: it's populated from a <code>resolvedParams</code>/<code>resolved_params</code> argument to <code>startOrResume</code>/<code>start_or_resume</code>, mirroring how <code>identity</code> params are supplied by the calling app. If your workflows already assumed a different resolution mechanism for <code>resolve: true</code> params, this is new behavior, not a restored one.
+            <code>{{project.x}}</code> only resolves if you supply a <code>projectDataResolver</code>/<code>project_data_resolver</code> — the SDK has no project data store of its own (that lives in the separate, closed-source Vela Server product). Without one, it stays <code>{}</code> rather than raising. See <a href="#core-templating">Templating</a>.
           </li>
         </ul>
       </section>
