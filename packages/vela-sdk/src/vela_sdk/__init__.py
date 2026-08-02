@@ -12,6 +12,7 @@ Usage::
 from vela_sdk.engine.types import AdvanceResult, WorkflowRunState, WorkflowRunStatus
 from vela_sdk.engine.workflow_engine import WorkflowEngine
 from vela_sdk.locale import Locale, get_locale
+from vela_sdk.sources import SourceContext, SourceHandler, clear_sources, register_source, resolve_source
 from vela_sdk.schemas.workflow import (
     AnyStepDefinition,
     BaseStepDefinition,
@@ -59,6 +60,8 @@ __all__ = [
     "FreeformStep",
     "Locale",
     "McpCallStep",
+    "SourceContext",
+    "SourceHandler",
     "StepDefinition",
     "StepType",
     "VelaToolkit",
@@ -70,5 +73,8 @@ __all__ = [
     "WorkflowRunStatus",
     "WorkflowStep",
     "WorkflowStore",
+    "clear_sources",
     "get_locale",
+    "register_source",
+    "resolve_source",
 ]

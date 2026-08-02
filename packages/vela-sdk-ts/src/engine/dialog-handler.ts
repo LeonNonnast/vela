@@ -6,7 +6,7 @@
  */
 
 import { DialogModeRegistry } from "./dialog-modes.js";
-import { PromptBuilder, type ResourceResolver } from "./prompt-builder.js";
+import { PromptBuilder, type ProjectDataResolver, type ResourceResolver } from "./prompt-builder.js";
 import type { AdvanceResult, WorkflowRunState, WorkflowRunStatus } from "./types.js";
 import type {
   AnyStepDefinition,
@@ -36,6 +36,21 @@ export type ParseStepOutputFn = (
   stepOutput: string | null | undefined,
   captures: CaptureDefinition[],
 ) => Record<string, unknown>;
+
+/**
+ * Resolves + persists `step.fetch` for a step the run is about to land on
+ * (already moved onto `step` in the store). On success returns the updated
+ * run; on failure, applies `on_error` (fallback/abort) and returns a
+ * terminal `AdvanceResult` for the caller to return as-is. Injected so
+ * `DialogHandler` doesn't need its own copy of the engine's retry/on_error/
+ * fallback-prompt logic — see `DefaultWorkflowEngine.resolveFetchesForStep`
+ * and `applyEngineStepFailure`.
+ */
+export type ResolveFetchesFn = (
+  step: AnyStepDefinition,
+  run: WorkflowRunState,
+  workflowDef: WorkflowDefinition,
+) => Promise<{ ok: true; run: WorkflowRunState } | { ok: false; result: AdvanceResult }>;
 
 // ---------------------------------------------------------------------------
 // DialogHandler
@@ -73,6 +88,8 @@ export class DialogHandler {
     parseStepOutputFn: ParseStepOutputFn,
     resourceResolver?: ResourceResolver,
     locale?: Locale,
+    resolveFetchesFn?: ResolveFetchesFn,
+    projectDataResolver?: ProjectDataResolver,
   ): Promise<AdvanceResult> {
     const loc = locale ?? getLocale();
     const state = run.stateData;
@@ -105,7 +122,14 @@ export class DialogHandler {
         run = await this.store.updateStep(run.id, nextStepId, { stateData: stateUpdates });
         const nextStep = getStepFn(workflowDef, nextStepId);
         if (nextStep) {
-          const prompt = this.promptBuilder.assemblePrompt(workflowDef, run, nextStep, resourceResolver, loc);
+          if (resolveFetchesFn) {
+            const fetchOutcome = await resolveFetchesFn(nextStep, run, workflowDef);
+            if (!fetchOutcome.ok) {
+              return fetchOutcome.result;
+            }
+            run = fetchOutcome.run;
+          }
+          const prompt = this.promptBuilder.assemblePrompt(workflowDef, run, nextStep, resourceResolver, loc, projectDataResolver);
           return { run, prompt, completed: false };
         }
       }
@@ -196,7 +220,14 @@ export class DialogHandler {
       run = await this.store.updateStep(run.id, nextStepId, { stateData: stateUpdates });
       const nextStep = getStepFn(workflowDef, nextStepId);
       if (nextStep) {
-        const prompt = this.promptBuilder.assemblePrompt(workflowDef, run, nextStep, resourceResolver, loc);
+        if (resolveFetchesFn) {
+          const fetchOutcome = await resolveFetchesFn(nextStep, run, workflowDef);
+          if (!fetchOutcome.ok) {
+            return fetchOutcome.result;
+          }
+          run = fetchOutcome.run;
+        }
+        const prompt = this.promptBuilder.assemblePrompt(workflowDef, run, nextStep, resourceResolver, loc, projectDataResolver);
         return { run, prompt, completed: false };
       }
     }

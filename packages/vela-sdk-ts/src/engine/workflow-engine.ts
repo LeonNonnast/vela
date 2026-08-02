@@ -10,7 +10,7 @@
 
 import { DialogHandler } from "./dialog-handler.js";
 import { LifecycleChecker } from "./lifecycle.js";
-import { PromptBuilder, type ResourceResolver } from "./prompt-builder.js";
+import { PromptBuilder, type ProjectDataResolver, type ResourceResolver } from "./prompt-builder.js";
 import {
   type AdvanceResult,
   type ErrorAction,
@@ -22,11 +22,14 @@ import type {
   CaptureDefinition,
   DelegateStepDefinition,
   LifecycleDefinition,
+  McpCallStepDefinition,
   WorkflowDefinition,
 } from "../schemas/workflow.js";
 import type { WorkflowStore } from "../storage/store.js";
 import { resolveDelegate } from "../delegate/registry.js";
 import type { DelegateContext } from "../delegate/types.js";
+import { resolveSource } from "../sources/registry.js";
+import type { SourceContext } from "../sources/types.js";
 import type { Locale } from "../locale/locale.js";
 
 // ---------------------------------------------------------------------------
@@ -35,6 +38,13 @@ import type { Locale } from "../locale/locale.js";
 
 export interface StartOptions {
   params?: Record<string, unknown>;
+  /**
+   * Values for params flagged `resolve: true`, already resolved by the
+   * calling app from its own context (analogous to how `identity` params
+   * are supplied). Exposed in templates as `{{resolved.x}}`. Wins over
+   * `params`/defaults for resolve-flagged param names.
+   */
+  resolvedParams?: Record<string, unknown>;
   projectId?: string | null;
   parentRunId?: string | null;
   parentStepId?: string | null;
@@ -44,14 +54,17 @@ export interface AdvanceOptions {
   stepOutput?: string | null;
   notes?: string | null;
   resourceResolver?: ResourceResolver;
+  /** Resolves `run.projectId` to data exposed as `{{project.x}}`. */
+  projectDataResolver?: ProjectDataResolver;
   /**
-   * Cancellation signal propagated to delegate-step handlers. Non-delegate
-   * step types ignore this — they are advanced synchronously.
+   * Cancellation signal propagated to delegate-step and mcp_call/fetch
+   * handlers. Non-in-engine step types ignore this — they are advanced
+   * synchronously.
    */
   signal?: AbortSignal;
   /**
-   * Optional structured-log sink forwarded to delegate-step handlers.
-   * Defaults to a no-op when omitted.
+   * Optional structured-log sink forwarded to delegate-step and
+   * mcp_call/fetch handlers. Defaults to a no-op when omitted.
    */
   log?: (msg: string, meta?: unknown) => void;
   /** Locale for prompt assembly. Defaults to English when omitted. */
@@ -80,7 +93,18 @@ export interface IWorkflowEngine {
     step?: AnyStepDefinition,
     resourceResolver?: ResourceResolver,
     locale?: Locale,
+    projectDataResolver?: ProjectDataResolver,
   ): string;
+
+  /**
+   * Explicitly pause an active run. Throws if the run isn't `ACTIVE`, or if
+   * `workflowDef.lifecycle.allow_pause` is `false`. Resuming is just calling
+   * `advance()` again — it already accepts runs in `PAUSED` status.
+   */
+  pauseRun(
+    run: WorkflowRunState,
+    workflowDef: WorkflowDefinition,
+  ): Promise<WorkflowRunState>;
 
   getStep(
     workflowDef: WorkflowDefinition,
@@ -151,13 +175,23 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
     }
 
     // Resolve default params
-    const resolvedParams: Record<string, unknown> = {};
+    const finalParams: Record<string, unknown> = {};
     if (params) {
-      Object.assign(resolvedParams, params);
+      Object.assign(finalParams, params);
     }
     for (const pDef of workflowDef.params) {
-      if (!(pDef.name in resolvedParams) && pDef.default !== undefined) {
-        resolvedParams[pDef.name] = pDef.default;
+      if (!(pDef.name in finalParams) && pDef.default !== undefined) {
+        finalParams[pDef.name] = pDef.default;
+      }
+    }
+    // {{resolved.x}} — resolve-flagged params: values the caller already
+    // resolved from its own context win over `params`/defaults.
+    const resolvedParams = options?.resolvedParams;
+    if (resolvedParams) {
+      for (const pDef of workflowDef.params) {
+        if (pDef.resolve && pDef.name in resolvedParams) {
+          finalParams[pDef.name] = resolvedParams[pDef.name];
+        }
       }
     }
 
@@ -167,7 +201,7 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
     let run = await this.store.createRun({
       workflowId: workflowDef.id,
       workflowVersion: workflowDef.version,
-      params: Object.keys(resolvedParams).length > 0 ? resolvedParams : undefined,
+      params: Object.keys(finalParams).length > 0 ? finalParams : undefined,
       projectId: options?.projectId,
       parentRunId: options?.parentRunId,
       parentStepId: options?.parentStepId,
@@ -175,6 +209,40 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
 
     // Set the first step
     run = await this.store.updateStep(run.id, firstStep ?? null);
+
+    // Run the first step's `fetch` definitions (if any) now — it's the only
+    // place this can happen, since `assemblePrompt` for the first step is
+    // synchronous and called separately by the caller after this returns.
+    const firstStepDef = firstStep ? this.getStep(workflowDef, firstStep) : undefined;
+    if (firstStepDef && firstStepDef.fetch.length > 0) {
+      const onErr = firstStepDef.on_error;
+      const maxAttempts = onErr && onErr.retry > 0 ? onErr.retry + 1 : 1;
+      let fetchData: Record<string, unknown> | undefined;
+      let lastErrorMessage: string | undefined;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          fetchData = await this.executeFetches(firstStepDef, run, workflowDef, undefined, undefined);
+          break;
+        } catch (err) {
+          lastErrorMessage = err instanceof Error ? err.message : String(err);
+        }
+      }
+
+      if (fetchData !== undefined) {
+        run = await this.store.updateStep(run.id, run.currentStep ?? null, {
+          stateData: { _fetch: fetchData },
+        });
+      } else {
+        const outcome = await this.transitionOnFailure(
+          run,
+          firstStepDef,
+          workflowDef,
+          lastErrorMessage ?? "fetch failed",
+        );
+        run = outcome.run;
+      }
+    }
 
     return [run, true];
   }
@@ -247,44 +315,65 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
       }
 
       if (!handlerSucceeded) {
-        const errorAction = this.handleOnError(
+        return this.applyEngineStepFailure(
           run,
           currentStep,
+          workflowDef,
           lastErrorMessage ?? "delegate handler failed",
+          resourceResolver,
+          options?.locale,
+          options?.projectDataResolver,
         );
-        const errorMessage =
-          errorAction.message ?? lastErrorMessage ?? "delegate handler failed";
-
-        if (errorAction.action === "fallback" && errorAction.fallbackStep) {
-          const fallbackStep = this.getStep(workflowDef, errorAction.fallbackStep);
-          run = await this.store.updateStep(run.id, errorAction.fallbackStep, {
-            stateData: { _error: errorMessage },
-          });
-          if (fallbackStep) {
-            const prompt = this.assemblePrompt(
-              workflowDef,
-              run,
-              fallbackStep,
-              resourceResolver,
-              options?.locale,
-            );
-            return { run, prompt, completed: false, error: errorMessage };
-          }
-          return { run, completed: true, error: errorMessage };
-        }
-
-        // abort (default when no fallback is configured)
-        run = await this.store.updateStep(run.id, run.currentStep ?? null, {
-          status: WorkflowRunStatus.CANCELLED,
-          stateData: { _error: errorMessage },
-        });
-        return { run, completed: true, error: errorMessage };
       }
 
       stepOutput =
         typeof delegateResult === "string"
           ? delegateResult
           : JSON.stringify(delegateResult ?? null);
+    }
+
+    // mcp_call steps make a single server-side tool call via the source
+    // registry (see ../sources/registry.ts) and auto-advance — no agent
+    // round-trip, same in-engine execution + automatic on_error as
+    // `delegate` above.
+    if (currentStep.type === "mcp_call") {
+      let mcpResult: unknown;
+      let handlerSucceeded = false;
+      let lastErrorMessage: string | undefined;
+
+      const onErr = currentStep.on_error;
+      const maxAttempts = onErr && onErr.retry > 0 ? onErr.retry + 1 : 1;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          mcpResult = await this.executeMcpCallStep(
+            currentStep,
+            run,
+            workflowDef,
+            options?.signal,
+            options?.log,
+          );
+          handlerSucceeded = true;
+          break;
+        } catch (err) {
+          lastErrorMessage = err instanceof Error ? err.message : String(err);
+        }
+      }
+
+      if (!handlerSucceeded) {
+        return this.applyEngineStepFailure(
+          run,
+          currentStep,
+          workflowDef,
+          lastErrorMessage ?? "mcp_call failed",
+          resourceResolver,
+          options?.locale,
+          options?.projectDataResolver,
+        );
+      }
+
+      stepOutput =
+        typeof mcpResult === "string" ? mcpResult : JSON.stringify(mcpResult ?? null);
     }
 
     // Dialog steps have their own advancement logic
@@ -300,6 +389,29 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
         (output, captures) => DefaultWorkflowEngine.parseStepOutput(output, captures),
         resourceResolver,
         options?.locale,
+        async (step, r, wfDef) => {
+          const outcome = await this.resolveFetchesForStep(step, r, wfDef, options);
+          if (!outcome.ok) {
+            const result = await this.applyEngineStepFailure(
+              r,
+              step,
+              wfDef,
+              outcome.errorMessage,
+              resourceResolver,
+              options?.locale,
+              options?.projectDataResolver,
+            );
+            return { ok: false, result };
+          }
+          if (!outcome.fetchData) {
+            return { ok: true, run: r };
+          }
+          const updated = await this.store.updateStep(r.id, r.currentStep ?? null, {
+            stateData: { _fetch: outcome.fetchData },
+          });
+          return { ok: true, run: updated };
+        },
+        options?.projectDataResolver,
       );
     }
 
@@ -350,6 +462,32 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
         }
       }
 
+      // Run this step's `fetch` definitions (if any) before landing on it,
+      // so {{fetch.x}} is populated by the time its prompt is assembled.
+      if (nextStep) {
+        const fetchOutcome = await this.resolveFetchesForStep(
+          nextStep,
+          { ...run, currentStep: nextStepId, stateData: { ...run.stateData, ...stateUpdates } },
+          workflowDef,
+          options,
+        );
+        if (!fetchOutcome.ok) {
+          run = await this.store.updateStep(run.id, nextStepId, { stateData: stateUpdates });
+          return this.applyEngineStepFailure(
+            run,
+            nextStep,
+            workflowDef,
+            fetchOutcome.errorMessage,
+            resourceResolver,
+            options?.locale,
+            options?.projectDataResolver,
+          );
+        }
+        if (fetchOutcome.fetchData) {
+          stateUpdates["_fetch"] = fetchOutcome.fetchData;
+        }
+      }
+
       // Move to next step
       run = await this.store.updateStep(run.id, nextStepId, {
         stateData: stateUpdates,
@@ -361,6 +499,7 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
           nextStep,
           resourceResolver,
           options?.locale,
+          options?.projectDataResolver,
         );
         const result: AdvanceResult = { run, prompt, completed: false };
         // Propagate delegate info for execute steps
@@ -391,6 +530,7 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
     step?: AnyStepDefinition,
     resourceResolver?: ResourceResolver,
     locale?: Locale,
+    projectDataResolver?: ProjectDataResolver,
   ): string {
     if (!step) {
       step = this.getStep(workflowDef, run.currentStep ?? "");
@@ -404,7 +544,27 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
       step,
       resourceResolver,
       locale,
+      projectDataResolver,
     );
+  }
+
+  // -----------------------------------------------------------------------
+  // pauseRun
+  // -----------------------------------------------------------------------
+
+  async pauseRun(
+    run: WorkflowRunState,
+    workflowDef: WorkflowDefinition,
+  ): Promise<WorkflowRunState> {
+    if (run.status !== WorkflowRunStatus.ACTIVE) {
+      throw new Error(`cannot pause run '${run.id}' — status is '${run.status}', not 'active'`);
+    }
+    if (workflowDef.lifecycle && workflowDef.lifecycle.allow_pause === false) {
+      throw new Error(`workflow '${workflowDef.id}' has lifecycle.allow_pause: false`);
+    }
+    return this.store.updateStep(run.id, run.currentStep ?? null, {
+      status: WorkflowRunStatus.PAUSED,
+    });
   }
 
   // -----------------------------------------------------------------------
@@ -568,6 +728,196 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
       return out;
     }
     return value;
+  }
+
+  // -----------------------------------------------------------------------
+  // Private: executeMcpCallStep
+  // -----------------------------------------------------------------------
+
+  /**
+   * Run the registered source handler for an `mcp_call` step.
+   *
+   * @throws if `mcp_source`/`mcp_tool` are missing, or no handler is
+   * registered for `mcp_source`.
+   */
+  private async executeMcpCallStep(
+    step: McpCallStepDefinition,
+    run: WorkflowRunState,
+    workflowDef: WorkflowDefinition,
+    signal: AbortSignal | undefined,
+    log: ((msg: string, meta?: unknown) => void) | undefined,
+  ): Promise<unknown> {
+    if (!step.mcp_source || !step.mcp_tool) {
+      throw new Error(`mcp_call step '${step.id}' is missing mcp_source/mcp_tool`);
+    }
+    const handler = resolveSource(step.mcp_source);
+    if (!handler) {
+      throw new Error(
+        `No handler registered for source '${step.mcp_source}' (mcp_call step '${step.id}')`,
+      );
+    }
+
+    const templateCtx = PromptBuilder.buildTemplateContext(workflowDef, run);
+    const resolvedParams = DefaultWorkflowEngine.resolveVarsDeep(
+      step.mcp_params,
+      templateCtx,
+    ) as Record<string, unknown>;
+    const ctx: SourceContext = { signal, log: log ?? ((_msg, _meta) => {}) };
+
+    return handler(step.mcp_tool, resolvedParams, ctx);
+  }
+
+  // -----------------------------------------------------------------------
+  // Private: executeFetches / resolveFetchesForStep
+  // -----------------------------------------------------------------------
+
+  /**
+   * Run every `fetch` definition on `step` via the source registry and
+   * return the results keyed by `fetch.key`.
+   *
+   * @throws if a fetch's `source` has no registered handler.
+   */
+  private async executeFetches(
+    step: AnyStepDefinition,
+    run: WorkflowRunState,
+    workflowDef: WorkflowDefinition,
+    signal: AbortSignal | undefined,
+    log: ((msg: string, meta?: unknown) => void) | undefined,
+  ): Promise<Record<string, unknown>> {
+    const templateCtx = PromptBuilder.buildTemplateContext(workflowDef, run);
+    const ctx: SourceContext = { signal, log: log ?? ((_msg, _meta) => {}) };
+
+    const result: Record<string, unknown> = {};
+    for (const fetchDef of step.fetch) {
+      const handler = resolveSource(fetchDef.source);
+      if (!handler) {
+        throw new Error(
+          `No handler registered for source '${fetchDef.source}' (fetch key '${fetchDef.key}' on step '${step.id}')`,
+        );
+      }
+      const resolvedParams = DefaultWorkflowEngine.resolveVarsDeep(
+        fetchDef.params,
+        templateCtx,
+      ) as Record<string, unknown>;
+      result[fetchDef.key] = await handler(fetchDef.action, resolvedParams, ctx);
+    }
+    return result;
+  }
+
+  /**
+   * Resolve `step.fetch` (if any) for a step the engine just landed on.
+   *
+   * No-ops (returns `{ ok: true }` with no `fetchData`) when the step
+   * declares no `fetch` entries and there's no stale `_fetch` to clear —
+   * zero behavior change for workflows that don't use `fetch`. On failure,
+   * applies `step.on_error` (retry/fallback/abort) the same way `delegate`
+   * and `mcp_call` do.
+   */
+  private async resolveFetchesForStep(
+    step: AnyStepDefinition,
+    run: WorkflowRunState,
+    workflowDef: WorkflowDefinition,
+    options: AdvanceOptions | undefined,
+  ): Promise<
+    | { ok: true; fetchData?: Record<string, unknown> }
+    | { ok: false; errorMessage: string }
+  > {
+    if (step.fetch.length === 0) {
+      return "_fetch" in run.stateData ? { ok: true, fetchData: {} } : { ok: true };
+    }
+
+    const onErr = step.on_error;
+    const maxAttempts = onErr && onErr.retry > 0 ? onErr.retry + 1 : 1;
+    let fetchData: Record<string, unknown> | undefined;
+    let lastErrorMessage: string | undefined;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        fetchData = await this.executeFetches(
+          step,
+          run,
+          workflowDef,
+          options?.signal,
+          options?.log,
+        );
+        break;
+      } catch (err) {
+        lastErrorMessage = err instanceof Error ? err.message : String(err);
+      }
+    }
+
+    if (fetchData === undefined) {
+      return { ok: false, errorMessage: lastErrorMessage ?? "fetch failed" };
+    }
+    return { ok: true, fetchData };
+  }
+
+  // -----------------------------------------------------------------------
+  // Private: transitionOnFailure / applyEngineStepFailure
+  // -----------------------------------------------------------------------
+
+  /**
+   * Apply `step.on_error` (fallback/abort) to `run` and persist the
+   * resulting transition. Shared core used both by `applyEngineStepFailure`
+   * (which also assembles the fallback step's prompt) and by
+   * `startOrResume`'s first-step `fetch` handling (which doesn't need a
+   * prompt — the caller assembles one separately after `startOrResume`
+   * returns).
+   */
+  private async transitionOnFailure(
+    run: WorkflowRunState,
+    step: AnyStepDefinition,
+    workflowDef: WorkflowDefinition,
+    errorMessage: string,
+  ): Promise<{ run: WorkflowRunState; message: string; fallbackStep?: AnyStepDefinition }> {
+    const errorAction = this.handleOnError(run, step, errorMessage);
+    const message = errorAction.message ?? errorMessage;
+
+    if (errorAction.action === "fallback" && errorAction.fallbackStep) {
+      const fallbackStep = this.getStep(workflowDef, errorAction.fallbackStep);
+      run = await this.store.updateStep(run.id, errorAction.fallbackStep, {
+        stateData: { _error: message },
+      });
+      return { run, message, fallbackStep };
+    }
+
+    // abort (default when no fallback is configured)
+    run = await this.store.updateStep(run.id, run.currentStep ?? null, {
+      status: WorkflowRunStatus.CANCELLED,
+      stateData: { _error: message },
+    });
+    return { run, message };
+  }
+
+  /** `transitionOnFailure`, plus assembling the fallback step's prompt (or completing the run) into an `AdvanceResult`. */
+  private async applyEngineStepFailure(
+    run: WorkflowRunState,
+    step: AnyStepDefinition,
+    workflowDef: WorkflowDefinition,
+    errorMessage: string,
+    resourceResolver: ResourceResolver | undefined,
+    locale: Locale | undefined,
+    projectDataResolver: ProjectDataResolver | undefined,
+  ): Promise<AdvanceResult> {
+    const { run: updatedRun, message, fallbackStep } = await this.transitionOnFailure(
+      run,
+      step,
+      workflowDef,
+      errorMessage,
+    );
+
+    if (fallbackStep) {
+      const prompt = this.assemblePrompt(
+        workflowDef,
+        updatedRun,
+        fallbackStep,
+        resourceResolver,
+        locale,
+        projectDataResolver,
+      );
+      return { run: updatedRun, prompt, completed: false, error: message };
+    }
+    return { run: updatedRun, completed: true, error: message };
   }
 
   // -----------------------------------------------------------------------

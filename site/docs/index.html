@@ -227,6 +227,7 @@
       <a href="#ts-storage" class="sidebar-link">Storage</a>
       <a href="#ts-adapters" class="sidebar-link">Adapters</a>
       <a href="#ts-delegate" class="sidebar-link">Delegate Steps</a>
+      <a href="#source-registry" class="sidebar-link">Source Registry (mcp_call &amp; fetch)</a>
       <a href="#ts-locale" class="sidebar-link">Locale &amp; Tool Names</a>
 
       <div class="sidebar-label">Reference</div>
@@ -288,7 +289,7 @@ steps:
       - key: result
         elicit: never</pre>
         </div>
-        <p>Every step also accepts: <code>depends_on</code> (block advancing until named <code>state_data</code> fields exist), <code>fetch</code> (declared but currently inert — see <a href="#known-limitations">Known Limitations</a>), <code>tools</code> (tool names surfaced to the agent for this step), <code>next</code> (explicit next-step override), <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code> — invoked automatically for TypeScript's in-engine <code>delegate</code> steps, otherwise your own error handling has to invoke it — see <a href="#known-limitations">Known Limitations</a>), and <code>resources</code> (inlined if short, referenced via a <code>vela://</code> URI if long).</p>
+        <p>Every step also accepts: <code>depends_on</code> (block advancing until named <code>state_data</code> fields exist), <code>fetch</code> (server-side data retrieval via the <a href="#source-registry">source registry</a>, run once when the engine lands on the step, exposed as <code>{{fetch.key}}</code>), <code>tools</code> (tool names surfaced to the agent for this step), <code>next</code> (explicit next-step override), <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code> — invoked automatically for any step type the engine executes in-process — TypeScript's <code>delegate</code> steps, and, in both SDKs, <code>mcp_call</code> steps and <code>fetch</code> — otherwise, for agent-executed step types, your own calling code still has to invoke it; see <a href="#known-limitations">Known Limitations</a>), and <code>resources</code> (inlined if short, referenced via a <code>vela://</code> URI if long).</p>
 
         <h3 id="core-steps">The Step Types</h3>
         <div class="table-wrap">
@@ -301,7 +302,7 @@ steps:
               <tr><td><code>execute</code></td><td>Agent performs a task and reports back via an explicit <code>advance(output=...)</code> call. <code>instructions</code> + a <code>delegate</code> string hint can be attached — see the <a href="#ts-delegate">note on delegate hints vs. delegate steps</a>.</td><td>Always breaks — agent must call advance explicitly</td></tr>
               <tr><td><code>dialog</code></td><td>Multi-phase conversation. <code>phases[]</code> (explicit) or a built-in <code>mode</code> (<code>brainstorming</code>, <code>requirements</code>, <code>planning</code>, <code>review</code>, <code>freeform</code>). Each phase's output is collected; after the last phase, all outputs are merged into one markdown block before <code>capture</code> runs.</td><td>Always breaks</td></tr>
               <tr><td><code>workflow</code></td><td><code>workflow_ref</code> + <code>params_mapping</code>. Pauses the parent run, auto-starts the referenced sub-workflow (params resolved from the mapping, then by matching names), and auto-resumes the parent when the child completes.</td><td>Always breaks (orchestrated one level up)</td></tr>
-              <tr><td><code>mcp_call</code></td><td><code>mcp_tool</code> / <code>mcp_source</code> / <code>mcp_params</code> fields exist in the schema, but <strong>neither engine executes the call</strong> — see <a href="#known-limitations">Known Limitations</a>. Today it behaves like a generic sequential step; the agent must invoke the tool itself.</td><td>Interactive (by necessity)</td></tr>
+              <tr><td><code>mcp_call</code></td><td><code>mcp_tool</code> / <code>mcp_source</code> / <code>mcp_params</code>. Calls the handler registered for <code>mcp_source</code> via the <a href="#source-registry">source registry</a> with <code>mcp_tool</code> as the tool name — no agent round-trip. <code>on_error</code> applies automatically on failure.</td><td>Resolved in-engine, in the same <code>advance()</code> call</td></tr>
               <tr><td><code>delegate</code></td><td><strong>TypeScript SDK only.</strong> Forwards execution to an app-registered handler (via a registry) synchronously, in-process — no agent round-trip. See <a href="#ts-delegate">Delegate Steps</a>.</td><td>Resolved in-engine, in the same <code>advance()</code> call</td></tr>
             </tbody>
           </table>
@@ -313,13 +314,16 @@ steps:
           <li><code>{{params.x}}</code> — a param passed when the workflow started</li>
           <li><code>{{steps.step_id.capture_key}}</code> — a value captured by an earlier step</li>
           <li><code>{{state.x}}</code> — anything currently in the run's state data</li>
+          <li><code>{{fetch.x}}</code> — the current step's <code>fetch</code> results, keyed by <code>fetch.key</code> (see <a href="#source-registry">Source Registry</a>)</li>
+          <li><code>{{resolved.x}}</code> — params flagged <code>resolve: true</code>, sourced from <code>resolvedParams</code>/<code>resolved_params</code> passed to <code>startOrResume</code>/<code>start_or_resume</code> (the calling app resolves the value from its own context, the same way it supplies <code>identity</code> params)</li>
+          <li><code>{{project.x}}</code> — data for the run's <code>project_id</code>, from an app-supplied <code>projectDataResolver</code>/<code>project_data_resolver</code> callback (same shape as <code>resourceResolver</code>: synchronous, <code>(project_id) -&gt; dict | None</code>). The SDK ships no implementation — stays <code>{}</code> until you pass one.</li>
         </ul>
-        <div class="callout callout--warn">
-          <strong>Not implemented:</strong> <code>{{fetch.x}}</code>, <code>{{resolved.x}}</code>, and <code>{{project.x}}</code> appear in the YAML schema's comments as template variables, but neither engine's template-context builder actually populates them. Don't rely on them — see <a href="#known-limitations">Known Limitations</a>.
-        </div>
 
         <h3 id="core-identity">Identity-Based Resume</h3>
         <p>Flag a workflow param <code>identity: true</code> and, when a run is started with that param set, the engine looks up any existing active/paused run with the same identity params first (<code>store.find_by_identity</code> / <code>store.findByIdentity</code>) instead of creating a new one. This is how a workflow "remembers" it's already mid-process for a given entity — e.g. the same <code>employee_name</code> — rather than starting a duplicate run every time.</p>
+
+        <h3 id="core-pause">Pausing a Run</h3>
+        <p><code>engine.pauseRun(run, workflowDef)</code> / <code>engine.pause_run(run, workflow_def)</code> explicitly parks an <code>ACTIVE</code> run as <code>PAUSED</code>. It raises if the run isn't <code>ACTIVE</code>, or if the workflow's <code>lifecycle.allow_pause</code> is <code>false</code> (it defaults to <code>true</code>, so most workflows are pausable unless they opt out). There's no separate resume method — <code>advance()</code> already treats <code>PAUSED</code> the same as <code>ACTIVE</code>, so calling it again is the resume path.</p>
       </section>
 
       <div class="section-divider"></div>
@@ -612,6 +616,58 @@ registerDelegate("shell", async (step, ctx) => {
         </div>
       </section>
 
+      <section id="source-registry">
+        <h3>Source Registry (mcp_call &amp; fetch) <span style="font-size: var(--text-sm); color: var(--text-gold); font-weight: 500;">— both SDKs, new</span></h3>
+        <p>Neither engine is a real MCP client — there's no protocol handshake to a "mounted server". Instead, <code>mcp_call</code> steps and the <code>fetch</code> step field both resolve against the same named-callback registry: the embedding app registers a handler per source namespace (e.g. <code>"devops"</code>) once at startup, and the engine looks it up and calls it in-process — the same shape as the <code>delegate</code> registry above, just keyed by <code>mcp_source</code>/<code>fetch.source</code> instead of <code>delegate</code>.</p>
+        <div class="code-block" data-lang="typescript">
+          <button class="copy-btn" data-copy="ts-source-register">Copy</button>
+          <pre id="ts-source-register">import { registerSource } from "vela-sdk";
+
+registerSource("devops", async (tool, params, ctx) => {
+  if (tool === "get-status") return callInternalApi(params);
+  throw new Error(`unknown tool: ${tool}`);
+});</pre>
+        </div>
+        <div class="code-block" data-lang="python">
+          <button class="copy-btn" data-copy="py-source-register">Copy</button>
+          <pre id="py-source-register">from vela_sdk import register_source
+
+async def devops_handler(tool, params, ctx):
+    if tool == "get-status":
+        return await call_internal_api(params)
+    raise ValueError(f"unknown tool: {tool}")
+
+register_source("devops", devops_handler)</pre>
+        </div>
+        <p>An <code>mcp_call</code> step runs its handler once and auto-advances — no agent round-trip, same in-engine execution (and automatic <code>on_error</code> retry/fallback/abort) as <code>delegate</code>:</p>
+        <div class="code-block" data-lang="yaml">
+          <button class="copy-btn" data-copy="mcp-call-yaml">Copy</button>
+          <pre id="mcp-call-yaml">- id: check-status
+  type: mcp_call
+  mcp_source: devops
+  mcp_tool: get-status
+  mcp_params:
+    service: "{{params.service_name}}"
+  capture:
+    - key: status
+      source: output</pre>
+        </div>
+        <p><code>fetch</code> is different: it's a field on <em>every</em> step type, run once when the engine lands on that step (before its prompt is shown), and exposes its results as <code>{{fetch.key}}</code> rather than driving the step's own advancement:</p>
+        <div class="code-block" data-lang="yaml">
+          <button class="copy-btn" data-copy="fetch-yaml">Copy</button>
+          <pre id="fetch-yaml">- id: review
+  type: freeform
+  prompt: "Current status: {{fetch.status}}. What should we do?"
+  fetch:
+    - key: status
+      source: devops
+      action: get-status
+      params:
+        service: "{{params.service_name}}"</pre>
+        </div>
+        <p>Handler signature: <code>(tool, params, ctx) =&gt; Promise&lt;unknown&gt;</code> / <code>async def handler(tool, params, ctx)</code>, where <code>params</code> already has <code>{{...}}</code> templates resolved and <code>ctx</code> gives you a cancellation <code>signal</code> and a no-op-by-default <code>log</code>. <code>registerSource</code>/<code>register_source</code> raises if the name is already taken; <code>resolveSource</code>/<code>resolve_source</code> and <code>clearSources</code>/<code>clear_sources</code> (test-only) round out the API. Both <code>mcp_call</code> and <code>fetch</code> apply the landing/current step's own <code>on_error</code> on failure — retry, then fallback to another step or abort (cancel) the run, exactly like <code>delegate</code> steps.</p>
+      </section>
+
       <section id="ts-locale">
         <h3>Locale &amp; Tool Names</h3>
         <div class="code-block" data-lang="typescript">
@@ -635,15 +691,11 @@ const vela = new VelaWorkflows({
         <ul class="limitations-list">
           <li>
             <span class="tag">Both SDKs</span>
-            <code>mcp_call</code> step type is schema-only. Neither engine has a code path that actually invokes an MCP tool for it — it's parsed into the model and then behaves like a generic sequential step. The calling agent must invoke the tool itself and report back via the step output.
+            <code>{{project.x}}</code> resolves only if you pass a <code>projectDataResolver</code>/<code>project_data_resolver</code> — a synchronous <code>(project_id) -&gt; dict | None</code> callback, same shape as <code>resourceResolver</code>. The SDK has no project data store of its own (that lives in the separate Vela Server product, not this OSS SDK), so without a resolver <code>{{project.x}}</code> stays <code>{}</code> rather than raising. See <a href="#core-templating">Templating</a>.
           </li>
           <li>
             <span class="tag">Both SDKs</span>
-            <code>{{fetch.x}}</code>, <code>{{resolved.x}}</code>, and <code>{{project.x}}</code> template variables are named in the YAML schema's comments but never populated by either template-context builder. Only <code>params</code>, <code>steps</code>, and <code>state</code> resolve. The <code>fetch</code> step field is likewise parsed but never read by the engine.
-          </li>
-          <li>
-            <span class="tag">Both SDKs</span>
-            <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code>) is computed by a helper the engine exposes. For step types the calling agent executes (<code>execute</code>, <code>freeform</code>, ...), the engine never runs the risky action itself, so your own calling code still has to invoke <code>on_error</code> and act on the result. The exception is TypeScript's <code>delegate</code> step: since its handler runs in-engine, a failing handler is now automatically retried (up to <code>on_error.retry</code> times), then routed to <code>on_error.fallback</code> or aborted (cancelling the run) — no caller wiring needed.
+            <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code>) only auto-applies for step types the engine executes in-process: TypeScript's <code>delegate</code> step, and, in both SDKs, <code>mcp_call</code> and the <code>fetch</code> step field. For step types the calling agent executes (<code>execute</code>, <code>freeform</code>, <code>choice</code>, <code>confirm</code>, dialog phases, <code>workflow</code>), the engine never runs the risky action itself — there's no way for it to, since those steps hand control back to a human/agent turn — so your own calling code still has to invoke <code>on_error</code> and act on the result. This isn't a gap that will close; it's inherent to which step types run synchronously in-engine versus round-trip through the caller.
           </li>
           <li>
             <span class="tag">Both SDKs</span>
@@ -651,7 +703,15 @@ const vela = new VelaWorkflows({
           </li>
           <li>
             <span class="tag">Both SDKs</span>
-            <code>auto_archive_after</code> is now enforced by <code>check_lifecycle</code>/<code>checkLifecycle</code>, same as <code>auto_cancel_after</code>: a <code>COMPLETED</code> run older than the configured duration is reported as <code>ARCHIVED</code>. Note that, like <code>auto_cancel_after</code>, this is a check your own scheduled code must call — neither engine runs a background sweep. <code>allow_pause</code> still has no enforcement: there is no explicit "pause a run" action in either engine to gate in the first place (the <code>PAUSED</code> status today is only ever set internally while a parent run waits on a sub-workflow).
+            <code>auto_archive_after</code> is now enforced by <code>check_lifecycle</code>/<code>checkLifecycle</code>, same as <code>auto_cancel_after</code>: a <code>COMPLETED</code> run older than the configured duration is reported as <code>ARCHIVED</code>. Note that, like <code>auto_cancel_after</code>, this is a check your own scheduled code must call — neither engine runs a background sweep.
+          </li>
+          <li>
+            <span class="tag">Both SDKs</span>
+            <code>allow_pause</code> is now enforced: <code>pauseRun</code>/<code>pause_run</code> explicitly parks an <code>ACTIVE</code> run as <code>PAUSED</code>, raising if <code>lifecycle.allow_pause</code> is <code>false</code> or the run isn't <code>ACTIVE</code>. See <a href="#core-pause">Pausing a Run</a>. There's still no separate resume method — <code>advance()</code> already treats <code>PAUSED</code> the same as <code>ACTIVE</code> — and no background sweep for <code>auto_archive_after</code>/<code>auto_cancel_after</code>; those remain checks your own scheduled code has to call.
+          </li>
+          <li>
+            <span class="tag">Both SDKs</span>
+            <code>{{resolved.x}}</code> has no documented spec beyond its name in the schema comments, so this SDK made a design choice rather than discovering an existing one: it's populated from a <code>resolvedParams</code>/<code>resolved_params</code> argument to <code>startOrResume</code>/<code>start_or_resume</code>, mirroring how <code>identity</code> params are supplied by the calling app. If your workflows already assumed a different resolution mechanism for <code>resolve: true</code> params, this is new behavior, not a restored one.
           </li>
         </ul>
       </section>

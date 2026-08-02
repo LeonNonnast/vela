@@ -24,10 +24,12 @@ class PromptBuilder:
     def build_template_context(
         workflow_def: WorkflowDefinition,
         run: WorkflowRunState,
+        project_data_resolver: Optional[Callable[[str], Optional[dict]]] = None,
     ) -> dict[str, Any]:
         """Build nested context dict for template resolution.
 
-        Supports: {{params.X}}, {{steps.step_id.capture_key}}, {{state.key}}
+        Supports: {{params.X}}, {{steps.step_id.capture_key}}, {{state.key}},
+        {{resolved.X}}, {{project.X}}, {{fetch.X}}
         """
         state = run.state_data
         params = run.params
@@ -42,10 +44,31 @@ class PromptBuilder:
             if step_data:
                 steps_context[step_def.id] = step_data
 
+        # {{resolved.x}} — the subset of params flagged `resolve: true` in
+        # the workflow definition. Same values as `params.x`, just also
+        # reachable under this name.
+        resolved = {
+            p_def.name: params[p_def.name]
+            for p_def in workflow_def.params
+            if p_def.resolve and p_def.name in params
+        }
+
+        # {{project.x}} — populated only if the caller supplied a resolver.
+        project: dict[str, Any] = {}
+        if run.project_id and project_data_resolver:
+            project = project_data_resolver(run.project_id) or {}
+
+        # {{fetch.x}} — results of the current step's `fetch` definitions,
+        # recomputed each time a step is entered (see `_resolve_fetches_for_step`).
+        fetch = state.get("_fetch") or {}
+
         return {
             "params": params,
             "steps": steps_context,
             "state": state,
+            "resolved": resolved,
+            "project": project,
+            "fetch": fetch,
         }
 
     @staticmethod
@@ -130,6 +153,7 @@ class PromptBuilder:
         step: AnyStepDefinition,
         resource_resolver: Optional[Callable[[str], Optional[ResourceDefinition]]] = None,
         locale: Optional[Locale] = None,
+        project_data_resolver: Optional[Callable[[str], Optional[dict]]] = None,
     ) -> str:
         """Assemble the prompt for a step.
 
@@ -140,7 +164,7 @@ class PromptBuilder:
             locale = get_locale()
 
         state = run.state_data
-        context = self.build_template_context(workflow_def, run)
+        context = self.build_template_context(workflow_def, run, project_data_resolver)
 
         parts: list[str] = []
 

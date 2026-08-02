@@ -16,6 +16,13 @@ import { getLocale, type Locale } from "../locale/locale.js";
 /** Resolves a resource ref ID to its definition. */
 export type ResourceResolver = (refId: string) => ResourceDefinition | undefined;
 
+/**
+ * Resolves a run's `projectId` to arbitrary project data, exposed in
+ * templates as `{{project.x}}`. The SDK ships no implementation — the
+ * embedding app supplies one (e.g. backed by its own project store).
+ */
+export type ProjectDataResolver = (projectId: string) => Record<string, unknown> | undefined;
+
 // ---------------------------------------------------------------------------
 // PromptBuilder
 // ---------------------------------------------------------------------------
@@ -29,6 +36,7 @@ export class PromptBuilder {
   static buildTemplateContext(
     workflowDef: WorkflowDefinition,
     run: WorkflowRunState,
+    projectDataResolver?: ProjectDataResolver,
   ): Record<string, unknown> {
     const state = run.stateData;
     const params = run.params;
@@ -47,10 +55,30 @@ export class PromptBuilder {
       }
     }
 
+    // {{resolved.x}} — the subset of params flagged `resolve: true` in the
+    // workflow definition. Same values as `params.x`, just also reachable
+    // under this name.
+    const resolved: Record<string, unknown> = {};
+    for (const pDef of workflowDef.params) {
+      if (pDef.resolve && pDef.name in params) {
+        resolved[pDef.name] = params[pDef.name];
+      }
+    }
+
+    // {{project.x}} — populated only if the caller supplied a resolver.
+    const project = run.projectId ? (projectDataResolver?.(run.projectId) ?? {}) : {};
+
+    // {{fetch.x}} — results of the current step's `fetch` definitions,
+    // recomputed each time a step is entered (see `resolveFetchesForStep`).
+    const fetch = (state["_fetch"] as Record<string, unknown> | undefined) ?? {};
+
     return {
       params,
       steps: stepsContext,
       state,
+      resolved,
+      project,
+      fetch,
     };
   }
 
@@ -156,10 +184,11 @@ export class PromptBuilder {
     step: AnyStepDefinition,
     resourceResolver?: ResourceResolver,
     locale?: Locale,
+    projectDataResolver?: ProjectDataResolver,
   ): string {
     const loc = locale ?? getLocale();
     const state = run.stateData;
-    const context = PromptBuilder.buildTemplateContext(workflowDef, run);
+    const context = PromptBuilder.buildTemplateContext(workflowDef, run, projectDataResolver);
 
     const parts: string[] = [];
 

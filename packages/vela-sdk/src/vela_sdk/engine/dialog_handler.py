@@ -62,8 +62,17 @@ class DialogHandler:
         parse_step_output_fn: Callable,
         resource_resolver: Optional[Callable[[str], Optional[ResourceDefinition]]] = None,
         locale: Optional[Locale] = None,
+        resolve_fetches_fn: Optional[Callable] = None,
+        project_data_resolver: Optional[Callable[[str], Optional[dict]]] = None,
     ) -> AdvanceResult:
-        """Handle dialog step advancement through phases."""
+        """Handle dialog step advancement through phases.
+
+        ``resolve_fetches_fn``, if given, is an async callable
+        ``(step, run, workflow_def) -> (True, run) | (False, AdvanceResult)``
+        mirroring ``WorkflowEngine._resolve_fetches_for_step`` +
+        ``_apply_engine_step_failure`` — it resolves + persists `step.fetch`
+        for a step the run just landed on, applying `on_error` on failure.
+        """
         if locale is None:
             locale = get_locale()
 
@@ -94,7 +103,12 @@ class DialogHandler:
                 run = await self.store.update_step(run.id, next_step_id, state_data=state_updates)
                 next_step = get_step_fn(workflow_def, next_step_id)
                 if next_step:
-                    prompt = self.prompt_builder.assemble_prompt(workflow_def, run, next_step, resource_resolver=resource_resolver, locale=locale)
+                    if resolve_fetches_fn:
+                        ok, outcome = await resolve_fetches_fn(next_step, run, workflow_def)
+                        if not ok:
+                            return outcome
+                        run = outcome
+                    prompt = self.prompt_builder.assemble_prompt(workflow_def, run, next_step, resource_resolver=resource_resolver, locale=locale, project_data_resolver=project_data_resolver)
                     return AdvanceResult(run=run, prompt=prompt)
 
             run = await self.store.update_step(
@@ -165,7 +179,12 @@ class DialogHandler:
             run = await self.store.update_step(run.id, next_step_id, state_data=state_updates)
             next_step = get_step_fn(workflow_def, next_step_id)
             if next_step:
-                prompt = self.prompt_builder.assemble_prompt(workflow_def, run, next_step, resource_resolver=resource_resolver, locale=locale)
+                if resolve_fetches_fn:
+                    ok, outcome = await resolve_fetches_fn(next_step, run, workflow_def)
+                    if not ok:
+                        return outcome
+                    run = outcome
+                prompt = self.prompt_builder.assemble_prompt(workflow_def, run, next_step, resource_resolver=resource_resolver, locale=locale, project_data_resolver=project_data_resolver)
                 return AdvanceResult(run=run, prompt=prompt)
 
         run = await self.store.update_step(

@@ -10,7 +10,7 @@ export { WorkflowRunStatus } from "./engine/types.js";
 export type { IWorkflowEngine, StartOptions, AdvanceOptions } from "./engine/workflow-engine.js";
 export { DefaultWorkflowEngine } from "./engine/workflow-engine.js";
 export { PromptBuilder } from "./engine/prompt-builder.js";
-export type { ResourceResolver } from "./engine/prompt-builder.js";
+export type { ResourceResolver, ProjectDataResolver } from "./engine/prompt-builder.js";
 export { DialogModeRegistry } from "./engine/dialog-modes.js";
 
 // ---------------------------------------------------------------------------
@@ -57,6 +57,17 @@ export type { DelegateContext, DelegateHandler } from "./delegate/types.js";
 export { makeDelegateStep } from "./delegate/step.js";
 export { delegateStepSchema } from "./schemas/workflow.js";
 export type { DelegateStepDefinition } from "./schemas/workflow.js";
+
+// ---------------------------------------------------------------------------
+// Sources (mcp_call step execution + fetch step field)
+// ---------------------------------------------------------------------------
+export {
+  registerSource,
+  resolveSource,
+  clearSources,
+} from "./sources/registry.js";
+export type { SourceContext, SourceHandler } from "./sources/types.js";
+export type { McpCallStepDefinition, FetchDefinition } from "./schemas/workflow.js";
 
 // ---------------------------------------------------------------------------
 // Storage

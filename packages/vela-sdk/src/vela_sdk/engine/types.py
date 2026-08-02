@@ -45,6 +45,9 @@ class AdvanceResult:
     completed: bool = False
     sub_workflow_ref: Optional[str] = None
     sub_workflow_params: Optional[dict] = None
+    # Set when an mcp_call step or a step's `fetch` handler failed and
+    # on_error was applied (mirrors the TS engine's `AdvanceResult.error`).
+    error: Optional[str] = None
 
 
 @dataclass
