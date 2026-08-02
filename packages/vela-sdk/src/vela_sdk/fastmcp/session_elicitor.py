@@ -6,7 +6,7 @@ import structlog
 from fastmcp.server.elicitation import AcceptedElicitation
 
 from vela_sdk.engine.types import WorkflowRunState
-from vela_sdk.fastmcp.locale import Locale, get_locale
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.fastmcp.response_builder import build_run_options
 from vela_sdk.schemas.workflow import WorkflowDefinition
 

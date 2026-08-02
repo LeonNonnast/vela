@@ -5,6 +5,7 @@ from typing import Any, Callable, Optional
 from vela_sdk.engine.dialog_modes import DialogModeRegistry
 from vela_sdk.engine.prompt_builder import PromptBuilder
 from vela_sdk.engine.types import AdvanceResult, WorkflowRunState, WorkflowRunStatus
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.schemas.resource import ResourceDefinition
 from vela_sdk.schemas.workflow import (
     AnyStepDefinition,
@@ -60,8 +61,12 @@ class DialogHandler:
         get_step_fn: Callable,
         parse_step_output_fn: Callable,
         resource_resolver: Optional[Callable[[str], Optional[ResourceDefinition]]] = None,
+        locale: Optional[Locale] = None,
     ) -> AdvanceResult:
         """Handle dialog step advancement through phases."""
+        if locale is None:
+            locale = get_locale()
+
         state = run.state_data
         phases = self.get_dialog_phases(step)
 
@@ -89,7 +94,7 @@ class DialogHandler:
                 run = await self.store.update_step(run.id, next_step_id, state_data=state_updates)
                 next_step = get_step_fn(workflow_def, next_step_id)
                 if next_step:
-                    prompt = self.prompt_builder.assemble_prompt(workflow_def, run, next_step, resource_resolver=resource_resolver)
+                    prompt = self.prompt_builder.assemble_prompt(workflow_def, run, next_step, resource_resolver=resource_resolver, locale=locale)
                     return AdvanceResult(run=run, prompt=prompt)
 
             run = await self.store.update_step(
@@ -106,7 +111,7 @@ class DialogHandler:
             run = await self.store.update_step(run.id, run.current_step, state_data=state)
             prompt = self._assemble_dialog_prompt(
                 workflow_def, run, step, first_phase, phases, {},
-                resource_resolver=resource_resolver,
+                resource_resolver=resource_resolver, locale=locale,
             )
             return AdvanceResult(run=run, prompt=prompt)
 
@@ -129,7 +134,7 @@ class DialogHandler:
             run = await self.store.update_step(run.id, run.current_step, state_data=state)
             prompt = self._assemble_dialog_prompt(
                 workflow_def, run, step, next_phase, phases, phases_output,
-                resource_resolver=resource_resolver,
+                resource_resolver=resource_resolver, locale=locale,
             )
             return AdvanceResult(run=run, prompt=prompt)
 
@@ -160,7 +165,7 @@ class DialogHandler:
             run = await self.store.update_step(run.id, next_step_id, state_data=state_updates)
             next_step = get_step_fn(workflow_def, next_step_id)
             if next_step:
-                prompt = self.prompt_builder.assemble_prompt(workflow_def, run, next_step, resource_resolver=resource_resolver)
+                prompt = self.prompt_builder.assemble_prompt(workflow_def, run, next_step, resource_resolver=resource_resolver, locale=locale)
                 return AdvanceResult(run=run, prompt=prompt)
 
         run = await self.store.update_step(
@@ -178,8 +183,12 @@ class DialogHandler:
         all_phases: list[DialogPhaseDefinition],
         phases_output: dict[str, str],
         resource_resolver: Optional[Callable[[str], Optional[ResourceDefinition]]] = None,
+        locale: Optional[Locale] = None,
     ) -> str:
         """Assemble prompt for a dialog phase."""
+        if locale is None:
+            locale = get_locale()
+
         phase_idx = next((i for i, p in enumerate(all_phases) if p.id == phase.id), 0)
         total = len(all_phases)
 
@@ -192,31 +201,31 @@ class DialogHandler:
         parts.append("")
 
         if step.goal:
-            parts.append(f"**Ziel:** {step.goal}")
+            parts.append(locale.engine_dialog_goal.format(goal=step.goal))
             parts.append("")
 
         if step.guidelines:
-            parts.append("**Guidelines:**")
+            parts.append(locale.engine_dialog_guidelines_heading)
             for gl in step.guidelines:
                 parts.append(f"- {gl}")
             parts.append("")
 
-        parts.append(f"**Phase-Anweisung:** {phase.guideline}")
+        parts.append(locale.engine_dialog_phase_instruction.format(guideline=phase.guideline))
         parts.append("")
 
         # Dialog instructions
-        parts.append("### Anweisungen")
-        parts.append("- Führe ein **Gespräch** mit dem User gemäß der Phase-Anweisung oben.")
-        parts.append("- Stelle Rückfragen, mache Vorschläge, iteriere — bis das Phasenziel erreicht ist.")
-        parts.append("- Wenn die Phase abgeschlossen ist, fasse das Ergebnis **stichpunktartig** zusammen.")
-        parts.append(f"- Rufe dann `workflow_advance(run_id=\"{run.id}\", output=\"<Zusammenfassung>\")` auf.")
-        parts.append("- Gib die Zusammenfassung als `output` mit — sie wird für spätere Phasen gespeichert.")
+        parts.append(locale.engine_dialog_instructions_heading)
+        parts.append(locale.engine_dialog_instruction_converse)
+        parts.append(locale.engine_dialog_instruction_iterate)
+        parts.append(locale.engine_dialog_instruction_summarize)
+        parts.append(locale.engine_dialog_instruction_call_advance.format(run_id=run.id))
+        parts.append(locale.engine_dialog_instruction_output_note)
         parts.append("")
 
         # Resources
         if resource_resolver:
             resource_parts = self.prompt_builder.assemble_resources(
-                workflow_def, step, resource_resolver
+                workflow_def, step, resource_resolver, locale=locale
             )
             if resource_parts:
                 parts.extend(resource_parts)
@@ -231,7 +240,7 @@ class DialogHandler:
 
         # Previous phase results
         if phases_output:
-            parts.append("### Bisherige Ergebnisse")
+            parts.append(locale.engine_dialog_previous_results_heading)
             for p in all_phases:
                 if p.id in phases_output:
                     p_name = p.name or p.id

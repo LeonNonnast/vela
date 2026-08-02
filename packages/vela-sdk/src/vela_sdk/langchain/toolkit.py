@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional
 from langchain_core.tools import BaseTool, BaseToolkit
 from pydantic import ConfigDict
 
-from vela_sdk.fastmcp.locale import Locale, get_locale
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.fastmcp.protocols import (
     InMemoryWorkflowResolver,
     SessionProvider,

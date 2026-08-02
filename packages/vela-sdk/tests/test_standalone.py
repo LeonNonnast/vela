@@ -24,7 +24,7 @@ fastmcp = pytest.importorskip("fastmcp")
 from fastmcp import Client, FastMCP
 
 from vela_sdk.fastmcp.integration import VelaWorkflows
-from vela_sdk.fastmcp.locale import Locale, get_locale
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.fastmcp.protocols import (
     ParamFilter,
     SessionProvider,

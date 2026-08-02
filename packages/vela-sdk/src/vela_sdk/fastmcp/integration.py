@@ -15,7 +15,7 @@ from vela_sdk.fastmcp.auto_advance import (
     step_captures_complete,
 )
 from vela_sdk.fastmcp.elicitation import ElicitationService
-from vela_sdk.fastmcp.locale import Locale, get_locale
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.fastmcp.protocols import (
     DefaultParamFilter,
     InMemoryWorkflowResolver,
@@ -237,7 +237,7 @@ class VelaWorkflows:
                     )
 
                     if can_advance:
-                        result = await engine.advance(run, wf_def, step_output=output, notes=notes, resource_resolver=resolver)
+                        result = await engine.advance(run, wf_def, step_output=output, notes=notes, resource_resolver=resolver, locale=locale)
                         await store.commit()
 
                         if self._auto_advance and ctx:
@@ -319,7 +319,7 @@ class VelaWorkflows:
                 # Auto-advance loop
                 step_def = engine._get_step(wf_def, run.current_step)
                 if step_def and step_captures_complete(step_def, run):
-                    result = await engine.advance(run, wf_def, resource_resolver=resolver)
+                    result = await engine.advance(run, wf_def, resource_resolver=resolver, locale=locale)
                     await store.commit()
                     if self._auto_advance and ctx:
                         result = await auto_advance_loop(ctx, engine, wf_def, result, store, resolver)
@@ -465,7 +465,7 @@ class VelaWorkflows:
         # Auto-advance child
         child_step = engine._get_step(child_wf_def, child_run.current_step)
         if child_step and step_captures_complete(child_step, child_run):
-            child_result = await engine.advance(child_run, child_wf_def, resource_resolver=resolver)
+            child_result = await engine.advance(child_run, child_wf_def, resource_resolver=resolver, locale=locale)
             await store.commit()
             if self._auto_advance and ctx:
                 child_result = await auto_advance_loop(ctx, engine, child_wf_def, child_result, store, resolver, locale=locale)
@@ -528,6 +528,7 @@ class VelaWorkflows:
             parent_run, parent_wf_def,
             step_output="sub_workflow_completed",
             resource_resolver=resolver,
+            locale=locale,
         )
         await store.commit()
 
@@ -588,7 +589,7 @@ class VelaWorkflows:
 
                         if chosen_run:
                             step_prompt = engine.assemble_prompt(
-                                wf, chosen_run, resource_resolver=resolver
+                                wf, chosen_run, resource_resolver=resolver, locale=loc,
                             )
                             run_params = chosen_run.params
                             param_labels = {p.name: p.label or p.name for p in wf.params}

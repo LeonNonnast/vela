@@ -71,6 +71,43 @@ class Locale:
     # Prompt: auto-mode instructions
     prompt_auto_mode: str  # {tool_name}
 
+    # --- engine/prompt_builder.py: assemble_prompt ---
+    engine_progress_heading: str
+    engine_progress_current_line: str  # "- **→ {step_name}** ← current"
+    engine_depends_on_heading: str
+    engine_not_captured: str  # placeholder for a depends_on field with no value yet
+    engine_tools_required_heading: str
+    engine_required_tag: str
+    engine_optional_tag: str
+    engine_step_tools_heading: str
+    engine_use_these_tools: str  # {tools}
+    engine_options_heading: str
+    engine_captures_hint: str  # {keys}
+
+    # engine/prompt_builder.py: assemble_resources
+    engine_resources_heading: str
+    engine_resources_load_hint: str
+
+    # engine/prompt_builder.py: CTAs by step type
+    engine_cta_confirm: str
+    engine_cta_choice: str
+    engine_cta_freeform: str
+    engine_cta_execute: str
+    engine_cta_dialog_start: str
+    engine_cta_dialog_continue: str
+
+    # --- engine/dialog_handler.py: _assemble_dialog_prompt ---
+    engine_dialog_goal: str  # "**Goal:** {goal}"
+    engine_dialog_guidelines_heading: str
+    engine_dialog_phase_instruction: str  # "**Phase instruction:** {guideline}"
+    engine_dialog_instructions_heading: str
+    engine_dialog_instruction_converse: str
+    engine_dialog_instruction_iterate: str
+    engine_dialog_instruction_summarize: str
+    engine_dialog_instruction_call_advance: str  # {run_id}
+    engine_dialog_instruction_output_note: str
+    engine_dialog_previous_results_heading: str
+
     @classmethod
     def en(cls) -> "Locale":
         """English locale (default)."""
@@ -202,6 +239,51 @@ class Locale:
                 "- For execute steps: Perform the task and then immediately call advance.\n"
                 "- Repeat until the workflow is completed."
             ),
+
+            engine_progress_heading="### Progress",
+            engine_progress_current_line="- **→ {step_name}** ← current",
+            engine_depends_on_heading="### Context from previous steps:",
+            engine_not_captured="(not captured)",
+            engine_tools_required_heading="### Required external tools",
+            engine_required_tag="[required]",
+            engine_optional_tag="[optional]",
+            engine_step_tools_heading="### Tools for this step",
+            engine_use_these_tools="Use the following tools: {tools}",
+            engine_options_heading="### Options:",
+            engine_captures_hint="*This step captures: {keys}*",
+
+            engine_resources_heading="### Available Resources",
+            engine_resources_load_hint=(
+                '*Load with `read_resource("URI")` or `vela_get_resource(id="...")`.* '
+            ),
+
+            engine_cta_confirm="**Please confirm or reject.**",
+            engine_cta_choice="**Please choose an option.**",
+            engine_cta_freeform="**Please provide input.**",
+            engine_cta_execute="**Execute, then confirm completion.**",
+            engine_cta_dialog_start="**Start the dialog — call advance.**",
+            engine_cta_dialog_continue="**Continue the dialog — process the current phase.**",
+
+            engine_dialog_goal="**Goal:** {goal}",
+            engine_dialog_guidelines_heading="**Guidelines:**",
+            engine_dialog_phase_instruction="**Phase instruction:** {guideline}",
+            engine_dialog_instructions_heading="### Instructions",
+            engine_dialog_instruction_converse=(
+                "- Have a **conversation** with the user according to the phase instruction above."
+            ),
+            engine_dialog_instruction_iterate=(
+                "- Ask follow-up questions, make suggestions, iterate — until the phase goal is reached."
+            ),
+            engine_dialog_instruction_summarize=(
+                "- Once the phase is complete, summarize the result **as bullet points**."
+            ),
+            engine_dialog_instruction_call_advance=(
+                '- Then call `workflow_advance(run_id="{run_id}", output="<summary>")`.'
+            ),
+            engine_dialog_instruction_output_note=(
+                "- Provide the summary as `output` — it is stored for later phases."
+            ),
+            engine_dialog_previous_results_heading="### Previous results",
         )
 
     @classmethod
@@ -337,6 +419,51 @@ class Locale:
                 "- Bei Execute-Steps: Führe die Aufgabe aus und rufe dann sofort advance auf.\n"
                 "- Wiederhole bis der Workflow abgeschlossen ist."
             ),
+
+            engine_progress_heading="### Fortschritt",
+            engine_progress_current_line="- **→ {step_name}** ← aktuell",
+            engine_depends_on_heading="### Kontext aus vorherigen Steps:",
+            engine_not_captured="(nicht erfasst)",
+            engine_tools_required_heading="### Benötigte externe Tools",
+            engine_required_tag="[erforderlich]",
+            engine_optional_tag="[optional]",
+            engine_step_tools_heading="### Tools für diesen Step",
+            engine_use_these_tools="Nutze folgende Tools: {tools}",
+            engine_options_heading="### Optionen:",
+            engine_captures_hint="*Dieser Step erfasst: {keys}*",
+
+            engine_resources_heading="### Available Resources",
+            engine_resources_load_hint=(
+                '*Lade mit `read_resource("URI")` oder `vela_get_resource(id="...")`.* '
+            ),
+
+            engine_cta_confirm="**Bitte bestaetigen oder ablehnen.**",
+            engine_cta_choice="**Bitte eine Option wählen.**",
+            engine_cta_freeform="**Bitte Eingabe machen.**",
+            engine_cta_execute="**Ausführen, dann Abschluss bestaetigen.**",
+            engine_cta_dialog_start="**Dialog starten — advance aufrufen.**",
+            engine_cta_dialog_continue="**Dialog fortsetzen — aktuelle Phase bearbeiten.**",
+
+            engine_dialog_goal="**Ziel:** {goal}",
+            engine_dialog_guidelines_heading="**Guidelines:**",
+            engine_dialog_phase_instruction="**Phase-Anweisung:** {guideline}",
+            engine_dialog_instructions_heading="### Anweisungen",
+            engine_dialog_instruction_converse=(
+                "- Führe ein **Gespräch** mit dem User gemäß der Phase-Anweisung oben."
+            ),
+            engine_dialog_instruction_iterate=(
+                "- Stelle Rückfragen, mache Vorschläge, iteriere — bis das Phasenziel erreicht ist."
+            ),
+            engine_dialog_instruction_summarize=(
+                "- Wenn die Phase abgeschlossen ist, fasse das Ergebnis **stichpunktartig** zusammen."
+            ),
+            engine_dialog_instruction_call_advance=(
+                '- Rufe dann `workflow_advance(run_id="{run_id}", output="<Zusammenfassung>")` auf.'
+            ),
+            engine_dialog_instruction_output_note=(
+                "- Gib die Zusammenfassung als `output` mit — sie wird für spätere Phasen gespeichert."
+            ),
+            engine_dialog_previous_results_heading="### Bisherige Ergebnisse",
         )
 
 

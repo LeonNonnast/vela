@@ -4,6 +4,7 @@ import re
 from typing import Any, Callable, Optional
 
 from vela_sdk.engine.types import WorkflowRunState
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.schemas.resource import ResourceDefinition
 from vela_sdk.schemas.workflow import (
     AnyStepDefinition,
@@ -69,12 +70,16 @@ class PromptBuilder:
         workflow_def: WorkflowDefinition,
         step: AnyStepDefinition,
         resource_resolver: Callable[[str], Optional[ResourceDefinition]],
+        locale: Optional[Locale] = None,
     ) -> list[str]:
         """Assemble resource sections for the prompt.
 
         Merges workflow-level and step-level resources (step wins on same ref).
         Resources < 500 chars are inlined; others are listed as URI references.
         """
+        if locale is None:
+            locale = get_locale()
+
         from vela_sdk.schemas.resource import ResourceReference
         # Merge: workflow-level first, step-level overrides
         merged: dict[str, ResourceReference] = {}
@@ -112,9 +117,9 @@ class PromptBuilder:
         if inline_parts:
             parts.extend(inline_parts)
         if reference_parts:
-            parts.append("### Available Resources")
+            parts.append(locale.engine_resources_heading)
             parts.extend(reference_parts)
-            parts.append("*Lade mit `read_resource(\"URI\")` oder `vela_get_resource(id=\"...\")`.* ")
+            parts.append(locale.engine_resources_load_hint)
 
         return parts
 
@@ -124,12 +129,16 @@ class PromptBuilder:
         run: WorkflowRunState,
         step: AnyStepDefinition,
         resource_resolver: Optional[Callable[[str], Optional[ResourceDefinition]]] = None,
+        locale: Optional[Locale] = None,
     ) -> str:
         """Assemble the prompt for a step.
 
         Includes progress overview, depends_on context, resources, step prompt,
         capture info, and CTA.
         """
+        if locale is None:
+            locale = get_locale()
+
         state = run.state_data
         context = self.build_template_context(workflow_def, run)
 
@@ -141,11 +150,11 @@ class PromptBuilder:
         parts.append("")
 
         # Progress overview
-        parts.append("### Fortschritt")
+        parts.append(locale.engine_progress_heading)
         for s in workflow_def.steps:
             s_name = s.name or s.id
             if s.id == step.id:
-                parts.append(f"- **→ {s_name}** ← aktuell")
+                parts.append(locale.engine_progress_current_line.format(step_name=s_name))
             elif any(cap.key in state for cap in s.capture):
                 parts.append(f"- ~~{s_name}~~ ✓")
             else:
@@ -154,17 +163,17 @@ class PromptBuilder:
 
         # depends_on context: extract all field keys from DependsOnDefinition list
         if step.depends_on:
-            parts.append("### Kontext aus vorherigen Steps:")
+            parts.append(locale.engine_depends_on_heading)
             for dep in step.depends_on:
                 for field in dep.fields:
-                    value = state.get(field, "(nicht erfasst)")
+                    value = state.get(field, locale.engine_not_captured)
                     parts.append(f"- **{field}**: {value}")
             parts.append("")
 
         # Resources: merge workflow-level + step-level (step wins on same ref)
         if resource_resolver:
             resource_parts = self.assemble_resources(
-                workflow_def, step, resource_resolver
+                workflow_def, step, resource_resolver, locale=locale
             )
             if resource_parts:
                 parts.extend(resource_parts)
@@ -172,19 +181,19 @@ class PromptBuilder:
 
         # Workflow-level tool requirements
         if workflow_def.tools:
-            parts.append("### Benötigte externe Tools")
+            parts.append(locale.engine_tools_required_heading)
             for t in workflow_def.tools:
                 server_hint = f" ({t.server})" if t.server else ""
                 desc_hint = f" — {t.description}" if t.description else ""
-                req_hint = "[erforderlich]" if t.required else "[optional]"
+                req_hint = locale.engine_required_tag if t.required else locale.engine_optional_tag
                 parts.append(f"- **{t.name}**{server_hint}{desc_hint} {req_hint}")
             parts.append("")
 
         # Step-level tool hints
         if step.tools:
             tool_list = ", ".join(f"`{t}`" for t in step.tools)
-            parts.append(f"### Tools für diesen Step")
-            parts.append(f"Nutze folgende Tools: {tool_list}")
+            parts.append(locale.engine_step_tools_heading)
+            parts.append(locale.engine_use_these_tools.format(tools=tool_list))
             parts.append("")
 
         # Step prompt with template resolution
@@ -194,7 +203,7 @@ class PromptBuilder:
         # Choice options
         if step.type == StepType.CHOICE and step.options:
             parts.append("")
-            parts.append("### Optionen:")
+            parts.append(locale.engine_options_heading)
             for i, opt in enumerate(step.options, 1):
                 desc = f" — {opt.description}" if opt.description else ""
                 parts.append(f"{i}. **{opt.label}**{desc}")
@@ -203,22 +212,22 @@ class PromptBuilder:
         if step.capture:
             parts.append("")
             keys = [c.key for c in step.capture]
-            parts.append(f"*Dieser Step erfasst: {', '.join(keys)}*")
+            parts.append(locale.engine_captures_hint.format(keys=", ".join(keys)))
 
         # CTA
         parts.append("")
         if step.type == StepType.CONFIRM:
-            parts.append("**Bitte bestaetigen oder ablehnen.**")
+            parts.append(locale.engine_cta_confirm)
         elif step.type == StepType.CHOICE:
-            parts.append("**Bitte eine Option wählen.**")
+            parts.append(locale.engine_cta_choice)
         elif step.type == StepType.FREEFORM:
-            parts.append("**Bitte Eingabe machen.**")
+            parts.append(locale.engine_cta_freeform)
         elif step.type == StepType.EXECUTE:
-            parts.append("**Ausführen, dann Abschluss bestaetigen.**")
+            parts.append(locale.engine_cta_execute)
         elif step.type == StepType.DIALOG:
             if state.get("_dialog_phase"):
-                parts.append("**Dialog fortsetzen — aktuelle Phase bearbeiten.**")
+                parts.append(locale.engine_cta_dialog_continue)
             else:
-                parts.append("**Dialog starten — advance aufrufen.**")
+                parts.append(locale.engine_cta_dialog_start)
 
         return "\n".join(parts)

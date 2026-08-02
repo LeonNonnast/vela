@@ -209,7 +209,7 @@ export function buildStepResponse(
   status: string = "active",
   locale?: Locale,
 ): Record<string, unknown> {
-  const prompt = engine.assemblePrompt(wfDef, run, undefined, resolver);
+  const prompt = engine.assemblePrompt(wfDef, run, undefined, resolver, locale);
   return {
     status,
     run_id: run.id,

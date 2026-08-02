@@ -11,7 +11,7 @@ Usage::
 
 from vela_sdk.engine.types import AdvanceResult, WorkflowRunState, WorkflowRunStatus
 from vela_sdk.engine.workflow_engine import WorkflowEngine
-from vela_sdk.fastmcp.locale import Locale, get_locale
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.schemas.workflow import (
     AnyStepDefinition,
     BaseStepDefinition,

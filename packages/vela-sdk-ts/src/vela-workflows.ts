@@ -465,6 +465,7 @@ export class VelaWorkflows {
             stepOutput: output,
             notes,
             resourceResolver: resolver,
+            locale,
           });
           await store.commit();
 
@@ -621,6 +622,7 @@ export class VelaWorkflows {
       if (stepDef && stepCapturesComplete(stepDef, currentRun)) {
         let result = await engine.advance(currentRun, wfDef, {
           resourceResolver: resolver,
+          locale,
         });
         await store.commit();
         if (this.autoAdvanceEnabled && ctx) {
@@ -799,6 +801,7 @@ export class VelaWorkflows {
           chosenRun,
           undefined,
           resolver,
+          loc,
         );
         const runParams = chosenRun.params;
         const paramLabels: Record<string, string> = {};
@@ -1033,6 +1036,7 @@ export class VelaWorkflows {
     if (childStep && stepCapturesComplete(childStep, childRun)) {
       let childResult = await engine.advance(childRun, childWfDef, {
         resourceResolver: resolver,
+        locale,
       });
       await store.commit();
       if (this.autoAdvanceEnabled && ctx) {
@@ -1125,6 +1129,7 @@ export class VelaWorkflows {
     let parentResult = await engine.advance(parentRun, parentWfDef, {
       stepOutput: "sub_workflow_completed",
       resourceResolver: resolver,
+      locale,
     });
     await store.commit();
 

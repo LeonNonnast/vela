@@ -163,6 +163,7 @@ export async function autoAdvanceLoop(
         // We check by trying to advance — the engine resolves next step internally
         current = await engine.advance(current.run, wfDef, {
           resourceResolver,
+          locale,
         });
         await store.commit();
       }
@@ -181,6 +182,7 @@ export async function autoAdvanceLoop(
     if (stepCapturesComplete(stepDef, current.run)) {
       current = await engine.advance(current.run, wfDef, {
         resourceResolver,
+        locale,
       });
       await store.commit();
     } else {

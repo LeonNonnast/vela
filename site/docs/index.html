@@ -288,7 +288,7 @@ steps:
       - key: result
         elicit: never</pre>
         </div>
-        <p>Every step also accepts: <code>depends_on</code> (block advancing until named <code>state_data</code> fields exist), <code>fetch</code> (declared but currently inert — see <a href="#known-limitations">Known Limitations</a>), <code>tools</code> (tool names surfaced to the agent for this step), <code>next</code> (explicit next-step override), <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code> — invoked by your own error handling, not automatically), and <code>resources</code> (inlined if short, referenced via a <code>vela://</code> URI if long).</p>
+        <p>Every step also accepts: <code>depends_on</code> (block advancing until named <code>state_data</code> fields exist), <code>fetch</code> (declared but currently inert — see <a href="#known-limitations">Known Limitations</a>), <code>tools</code> (tool names surfaced to the agent for this step), <code>next</code> (explicit next-step override), <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code> — invoked automatically for TypeScript's in-engine <code>delegate</code> steps, otherwise your own error handling has to invoke it — see <a href="#known-limitations">Known Limitations</a>), and <code>resources</code> (inlined if short, referenced via a <code>vela://</code> URI if long).</p>
 
         <h3 id="core-steps">The Step Types</h3>
         <div class="table-wrap">
@@ -452,9 +452,7 @@ workflows = VelaWorkflows(mcp, locale=Locale.de())
 custom = dataclasses.replace(Locale.en(), confirm_prompt="Bitte bestätigen?")</pre>
         </div>
         <p><code>tool_prefix</code> renames all 3 tools at once (<code>{prefix}_advance/status/list</code>); <code>tool_name_format={"advance": "do_step"}</code> overrides them individually.</p>
-        <div class="callout callout--warn">
-          <strong>Partial i18n:</strong> <code>locale=</code> only covers the FastMCP integration layer's own strings (the <code>next_action</code> text, elicitation prompts). The step <em>prompt body</em> and dialog-phase headers assembled by the workflow engine itself are currently hardcoded German regardless of the configured locale. Setting <code>locale=Locale.en()</code> gives you an English <code>next_action</code> wrapped around a German-language step prompt.
-        </div>
+        <p>The <code>locale=</code> you pass to <code>VelaWorkflows</code>/<code>FastMcpIntegration</code> covers both the FastMCP integration layer's own strings (the <code>next_action</code> text, elicitation prompts) <em>and</em> the workflow engine's own step-prompt assembly and dialog-phase headers — <code>WorkflowEngine.assemble_prompt</code>/<code>.advance</code> accept a <code>locale</code> parameter too, defaulting to English when omitted.</p>
       </section>
 
       <div class="section-divider"></div>
@@ -626,7 +624,7 @@ const vela = new VelaWorkflows({
   locale: getLocale("de"),
 });</pre>
         </div>
-        <p>Same <code>toolPrefix</code> / <code>toolNameFormat</code> mechanism as the Python SDK (keys <code>advance</code>/<code>status</code>/<code>list</code>).</p>
+        <p>Same <code>toolPrefix</code> / <code>toolNameFormat</code> mechanism as the Python SDK (keys <code>advance</code>/<code>status</code>/<code>list</code>). As in Python, this <code>locale</code> covers both the MCP adapter layer's strings and the workflow engine's own step-prompt assembly — <code>assemblePrompt</code>/<code>advance</code> on <code>DefaultWorkflowEngine</code> accept a <code>locale</code> parameter too, defaulting to English.</p>
       </section>
 
       <div class="section-divider"></div>
@@ -645,15 +643,15 @@ const vela = new VelaWorkflows({
           </li>
           <li>
             <span class="tag">Both SDKs</span>
-            <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code>) is computed by a helper the engine exposes, but neither engine calls it automatically on failure — your own calling code has to invoke it and act on the result.
-          </li>
-          <li>
-            <span class="tag">Python SDK</span>
-            <code>locale=</code> only covers the FastMCP integration layer's own strings (elicitation prompts, <code>next_action</code> text). The workflow engine's own step-prompt assembly and dialog-phase headers are currently hardcoded German regardless of locale — an English locale still shows a German prompt body.
+            <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code>) is computed by a helper the engine exposes. For step types the calling agent executes (<code>execute</code>, <code>freeform</code>, ...), the engine never runs the risky action itself, so your own calling code still has to invoke <code>on_error</code> and act on the result. The exception is TypeScript's <code>delegate</code> step: since its handler runs in-engine, a failing handler is now automatically retried (up to <code>on_error.retry</code> times), then routed to <code>on_error.fallback</code> or aborted (cancelling the run) — no caller wiring needed.
           </li>
           <li>
             <span class="tag">Both SDKs</span>
-            <code>auto_archive_after</code> and <code>allow_pause</code> exist on the lifecycle schema but have no enforcement logic in either engine today — only <code>auto_cancel_after</code> is actually implemented.
+            <code>locale=</code> previously only covered the adapter layer's own strings (elicitation prompts, <code>next_action</code> text). The workflow engine's own step-prompt assembly and dialog-phase headers are now locale-aware too — <code>assemble_prompt</code>/<code>assemblePrompt</code> and <code>advance</code> accept a <code>locale</code> parameter (defaulting to English) in both SDKs.
+          </li>
+          <li>
+            <span class="tag">Both SDKs</span>
+            <code>auto_archive_after</code> is now enforced by <code>check_lifecycle</code>/<code>checkLifecycle</code>, same as <code>auto_cancel_after</code>: a <code>COMPLETED</code> run older than the configured duration is reported as <code>ARCHIVED</code>. Note that, like <code>auto_cancel_after</code>, this is a check your own scheduled code must call — neither engine runs a background sweep. <code>allow_pause</code> still has no enforcement: there is no explicit "pause a run" action in either engine to gate in the first place (the <code>PAUSED</code> status today is only ever set internally while a parent run waits on a sub-workflow).
           </li>
         </ul>
       </section>

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from vela_sdk.engine.types import WorkflowRunStatus
 from vela_sdk.engine.workflow_engine import WorkflowEngine
-from vela_sdk.fastmcp.locale import Locale, get_locale
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.fastmcp.protocols import SessionProvider, WorkflowResolver
 from vela_sdk.fastmcp.response_builder import (
     build_next_action,

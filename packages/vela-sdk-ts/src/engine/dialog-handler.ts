@@ -15,6 +15,7 @@ import type {
   WorkflowDefinition,
 } from "../schemas/workflow.js";
 import type { WorkflowStore } from "../storage/store.js";
+import { getLocale, type Locale } from "../locale/locale.js";
 
 // ---------------------------------------------------------------------------
 // Callback types used by DialogHandler
@@ -71,7 +72,9 @@ export class DialogHandler {
     getStepFn: GetStepFn,
     parseStepOutputFn: ParseStepOutputFn,
     resourceResolver?: ResourceResolver,
+    locale?: Locale,
   ): Promise<AdvanceResult> {
+    const loc = locale ?? getLocale();
     const state = run.stateData;
     const phases = DialogHandler.getDialogPhases(step);
 
@@ -102,7 +105,7 @@ export class DialogHandler {
         run = await this.store.updateStep(run.id, nextStepId, { stateData: stateUpdates });
         const nextStep = getStepFn(workflowDef, nextStepId);
         if (nextStep) {
-          const prompt = this.promptBuilder.assemblePrompt(workflowDef, run, nextStep, resourceResolver);
+          const prompt = this.promptBuilder.assemblePrompt(workflowDef, run, nextStep, resourceResolver, loc);
           return { run, prompt, completed: false };
         }
       }
@@ -128,6 +131,7 @@ export class DialogHandler {
         phases,
         {},
         resourceResolver,
+        loc,
       );
       return { run, prompt, completed: false };
     }
@@ -158,6 +162,7 @@ export class DialogHandler {
         phases,
         phasesOutput,
         resourceResolver,
+        loc,
       );
       return { run, prompt, completed: false };
     }
@@ -191,7 +196,7 @@ export class DialogHandler {
       run = await this.store.updateStep(run.id, nextStepId, { stateData: stateUpdates });
       const nextStep = getStepFn(workflowDef, nextStepId);
       if (nextStep) {
-        const prompt = this.promptBuilder.assemblePrompt(workflowDef, run, nextStep, resourceResolver);
+        const prompt = this.promptBuilder.assemblePrompt(workflowDef, run, nextStep, resourceResolver, loc);
         return { run, prompt, completed: false };
       }
     }
@@ -212,7 +217,9 @@ export class DialogHandler {
     allPhases: DialogPhaseDefinition[],
     phasesOutput: Record<string, string>,
     resourceResolver?: ResourceResolver,
+    locale?: Locale,
   ): string {
+    const loc = locale ?? getLocale();
     const phaseIdx = allPhases.findIndex((p) => p.id === phase.id);
     const total = allPhases.length;
 
@@ -225,38 +232,28 @@ export class DialogHandler {
     parts.push("");
 
     if (step.type === "dialog" && step.goal) {
-      parts.push(`**Ziel:** ${step.goal}`);
+      parts.push(loc.engineDialogGoal.replace("{goal}", step.goal));
       parts.push("");
     }
 
     if (step.type === "dialog" && step.guidelines.length > 0) {
-      parts.push("**Guidelines:**");
+      parts.push(loc.engineDialogGuidelinesHeading);
       for (const gl of step.guidelines) {
         parts.push(`- ${gl}`);
       }
       parts.push("");
     }
 
-    parts.push(`**Phase-Anweisung:** ${phase.guideline}`);
+    parts.push(loc.engineDialogPhaseInstruction.replace("{guideline}", phase.guideline));
     parts.push("");
 
     // Dialog instructions
-    parts.push("### Anweisungen");
-    parts.push(
-      "- Führe ein **Gespräch** mit dem User gemäß der Phase-Anweisung oben.",
-    );
-    parts.push(
-      "- Stelle Rückfragen, mache Vorschläge, iteriere — bis das Phasenziel erreicht ist.",
-    );
-    parts.push(
-      "- Wenn die Phase abgeschlossen ist, fasse das Ergebnis **stichpunktartig** zusammen.",
-    );
-    parts.push(
-      `- Rufe dann \`workflow_advance(run_id="${run.id}", output="<Zusammenfassung>")\` auf.`,
-    );
-    parts.push(
-      "- Gib die Zusammenfassung als `output` mit — sie wird für spätere Phasen gespeichert.",
-    );
+    parts.push(loc.engineDialogInstructionsHeading);
+    parts.push(loc.engineDialogInstructionConverse);
+    parts.push(loc.engineDialogInstructionIterate);
+    parts.push(loc.engineDialogInstructionSummarize);
+    parts.push(loc.engineDialogInstructionCallAdvance.replace("{run_id}", run.id));
+    parts.push(loc.engineDialogInstructionOutputNote);
     parts.push("");
 
     // Resources
@@ -265,6 +262,8 @@ export class DialogHandler {
         workflowDef,
         step,
         resourceResolver,
+        false,
+        loc,
       );
       if (resourceParts.length > 0) {
         parts.push(...resourceParts);
@@ -282,7 +281,7 @@ export class DialogHandler {
 
     // Previous phase results
     if (Object.keys(phasesOutput).length > 0) {
-      parts.push("### Bisherige Ergebnisse");
+      parts.push(loc.engineDialogPreviousResultsHeading);
       for (const p of allPhases) {
         if (p.id in phasesOutput) {
           const pName = p.name ?? p.id;

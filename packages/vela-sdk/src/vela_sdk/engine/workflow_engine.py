@@ -9,6 +9,7 @@ from vela_sdk.engine.dialog_handler import DIALOG_MODES, DialogHandler
 from vela_sdk.engine.lifecycle import LifecycleChecker, _parse_duration_hours
 from vela_sdk.engine.prompt_builder import PromptBuilder
 from vela_sdk.engine.types import AdvanceResult, ErrorAction, WorkflowRunState, WorkflowRunStatus
+from vela_sdk.locale import Locale
 from vela_sdk.schemas.resource import ResourceDefinition
 from vela_sdk.schemas.workflow import (
     AnyStepDefinition,
@@ -95,6 +96,7 @@ class WorkflowEngine:
         step_output: Optional[str] = None,
         notes: Optional[str] = None,
         resource_resolver: Optional[Callable[[str], Optional[ResourceDefinition]]] = None,
+        locale: Optional[Locale] = None,
     ) -> AdvanceResult:
         """Advance workflow to the next step.
 
@@ -117,6 +119,7 @@ class WorkflowEngine:
                 get_step_fn=self._get_step,
                 parse_step_output_fn=self._parse_step_output,
                 resource_resolver=resource_resolver,
+                locale=locale,
             )
 
         # Process captures
@@ -148,7 +151,9 @@ class WorkflowEngine:
             run = await self.store.update_step(run.id, next_step_id, state_data=state_updates)
             next_step = self._get_step(workflow_def, next_step_id)
             if next_step:
-                prompt = self.assemble_prompt(workflow_def, run, next_step, resource_resolver=resource_resolver)
+                prompt = self.assemble_prompt(
+                    workflow_def, run, next_step, resource_resolver=resource_resolver, locale=locale,
+                )
                 return AdvanceResult(run=run, prompt=prompt)
 
         # No next step -- complete
@@ -166,13 +171,16 @@ class WorkflowEngine:
         run: WorkflowRunState,
         step: Optional[AnyStepDefinition] = None,
         resource_resolver: Optional[Callable[[str], Optional[ResourceDefinition]]] = None,
+        locale: Optional[Locale] = None,
     ) -> str:
         """Assemble the prompt for a step."""
         if step is None:
             step = self._get_step(workflow_def, run.current_step)
         if not step:
             return ""
-        return self._prompt_builder.assemble_prompt(workflow_def, run, step, resource_resolver=resource_resolver)
+        return self._prompt_builder.assemble_prompt(
+            workflow_def, run, step, resource_resolver=resource_resolver, locale=locale,
+        )
 
     def resolve_templates(self, text: str, context: dict) -> str:
         """Resolve {{variable}} templates in text."""

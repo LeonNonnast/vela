@@ -74,6 +74,44 @@ export interface Locale {
 
   // Prompt: auto-mode instructions
   promptAutoMode: string;
+
+  // --- engine/prompt-builder.ts: assemblePrompt ---
+  engineProgressHeading: string;
+  engineProgressCurrentLine: string; // "- **→ {step_name}** ← current"
+  engineDependsOnHeading: string;
+  engineNotCaptured: string;
+  engineToolsRequiredHeading: string;
+  engineRequiredTag: string;
+  engineOptionalTag: string;
+  engineStepToolsHeading: string;
+  engineUseTheseTools: string; // {tools}
+  engineOptionsHeading: string;
+  engineCapturesHint: string; // {keys}
+
+  // engine/prompt-builder.ts: assembleResources
+  engineResourcesHeading: string;
+  engineResourcesLoadHint: string;
+
+  // engine/prompt-builder.ts: CTAs by step type
+  engineCtaConfirm: string;
+  engineCtaChoice: string;
+  engineCtaFreeform: string;
+  engineCtaExecute: string;
+  engineCtaDelegate: string; // {delegate}
+  engineCtaDialogStart: string;
+  engineCtaDialogContinue: string;
+
+  // --- engine/dialog-handler.ts: assembleDialogPrompt ---
+  engineDialogGoal: string; // {goal}
+  engineDialogGuidelinesHeading: string;
+  engineDialogPhaseInstruction: string; // {guideline}
+  engineDialogInstructionsHeading: string;
+  engineDialogInstructionConverse: string;
+  engineDialogInstructionIterate: string;
+  engineDialogInstructionSummarize: string;
+  engineDialogInstructionCallAdvance: string; // {run_id}
+  engineDialogInstructionOutputNote: string;
+  engineDialogPreviousResultsHeading: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -199,6 +237,47 @@ export function enLocale(): Locale {
       "- Do **NOT** ask the user for permission \u2014 the engine controls the dialog via elicitation.\n" +
       "- For execute steps: Perform the task and then immediately call advance.\n" +
       "- Repeat until the workflow is completed.",
+
+    engineProgressHeading: "### Progress",
+    engineProgressCurrentLine: "- **\u2192 {step_name}** \u2190 current",
+    engineDependsOnHeading: "### Context from previous steps:",
+    engineNotCaptured: "(not captured)",
+    engineToolsRequiredHeading: "### Required external tools",
+    engineRequiredTag: "[required]",
+    engineOptionalTag: "[optional]",
+    engineStepToolsHeading: "### Tools for this step",
+    engineUseTheseTools: "Use the following tools: {tools}",
+    engineOptionsHeading: "### Options:",
+    engineCapturesHint: "*This step captures: {keys}*",
+
+    engineResourcesHeading: "### Available Resources",
+    engineResourcesLoadHint:
+      '*Load with `read_resource("URI")` or `vela_get_resource(id="...")`.* ',
+
+    engineCtaConfirm: "**Please confirm or reject.**",
+    engineCtaChoice: "**Please choose an option.**",
+    engineCtaFreeform: "**Please provide input.**",
+    engineCtaExecute: "**Execute, then confirm completion.**",
+    engineCtaDelegate: "**Delegating to: {delegate}**",
+    engineCtaDialogStart: "**Start the dialog \u2014 call advance.**",
+    engineCtaDialogContinue:
+      "**Continue the dialog \u2014 process the current phase.**",
+
+    engineDialogGoal: "**Goal:** {goal}",
+    engineDialogGuidelinesHeading: "**Guidelines:**",
+    engineDialogPhaseInstruction: "**Phase instruction:** {guideline}",
+    engineDialogInstructionsHeading: "### Instructions",
+    engineDialogInstructionConverse:
+      "- Have a **conversation** with the user according to the phase instruction above.",
+    engineDialogInstructionIterate:
+      "- Ask follow-up questions, make suggestions, iterate \u2014 until the phase goal is reached.",
+    engineDialogInstructionSummarize:
+      "- Once the phase is complete, summarize the result **as bullet points**.",
+    engineDialogInstructionCallAdvance:
+      '- Then call `workflow_advance(run_id="{run_id}", output="<summary>")`.',
+    engineDialogInstructionOutputNote:
+      "- Provide the summary as `output` \u2014 it is stored for later phases.",
+    engineDialogPreviousResultsHeading: "### Previous results",
   };
 }
 
@@ -326,6 +405,47 @@ export function deLocale(): Locale {
       "- Frage den User **NICHT** um Erlaubnis \u2014 der Engine steuert den Dialog per Elicitation.\n" +
       "- Bei Execute-Steps: F\u00fchre die Aufgabe aus und rufe dann sofort advance auf.\n" +
       "- Wiederhole bis der Workflow abgeschlossen ist.",
+
+    engineProgressHeading: "### Fortschritt",
+    engineProgressCurrentLine: "- **\u2192 {step_name}** \u2190 aktuell",
+    engineDependsOnHeading: "### Kontext aus vorherigen Steps:",
+    engineNotCaptured: "(nicht erfasst)",
+    engineToolsRequiredHeading: "### Ben\u00f6tigte externe Tools",
+    engineRequiredTag: "[erforderlich]",
+    engineOptionalTag: "[optional]",
+    engineStepToolsHeading: "### Tools f\u00fcr diesen Step",
+    engineUseTheseTools: "Nutze folgende Tools: {tools}",
+    engineOptionsHeading: "### Optionen:",
+    engineCapturesHint: "*Dieser Step erfasst: {keys}*",
+
+    engineResourcesHeading: "### Available Resources",
+    engineResourcesLoadHint:
+      '*Lade mit `read_resource("URI")` oder `vela_get_resource(id="...")`.* ',
+
+    engineCtaConfirm: "**Bitte bestaetigen oder ablehnen.**",
+    engineCtaChoice: "**Bitte eine Option w\u00e4hlen.**",
+    engineCtaFreeform: "**Bitte Eingabe machen.**",
+    engineCtaExecute: "**Ausf\u00fchren, dann Abschluss bestaetigen.**",
+    engineCtaDelegate: "**Delegation an: {delegate}**",
+    engineCtaDialogStart: "**Dialog starten \u2014 advance aufrufen.**",
+    engineCtaDialogContinue:
+      "**Dialog fortsetzen \u2014 aktuelle Phase bearbeiten.**",
+
+    engineDialogGoal: "**Ziel:** {goal}",
+    engineDialogGuidelinesHeading: "**Guidelines:**",
+    engineDialogPhaseInstruction: "**Phase-Anweisung:** {guideline}",
+    engineDialogInstructionsHeading: "### Anweisungen",
+    engineDialogInstructionConverse:
+      "- F\u00fchre ein **Gespr\u00e4ch** mit dem User gem\u00e4\u00df der Phase-Anweisung oben.",
+    engineDialogInstructionIterate:
+      "- Stelle R\u00fcckfragen, mache Vorschl\u00e4ge, iteriere \u2014 bis das Phasenziel erreicht ist.",
+    engineDialogInstructionSummarize:
+      "- Wenn die Phase abgeschlossen ist, fasse das Ergebnis **stichpunktartig** zusammen.",
+    engineDialogInstructionCallAdvance:
+      '- Rufe dann `workflow_advance(run_id="{run_id}", output="<Zusammenfassung>")` auf.',
+    engineDialogInstructionOutputNote:
+      "- Gib die Zusammenfassung als `output` mit \u2014 sie wird f\u00fcr sp\u00e4tere Phasen gespeichert.",
+    engineDialogPreviousResultsHeading: "### Bisherige Ergebnisse",
   };
 }
 

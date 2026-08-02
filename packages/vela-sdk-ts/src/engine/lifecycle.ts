@@ -69,6 +69,17 @@ export class LifecycleChecker {
       }
     }
 
+    if (lifecycle.auto_archive_after) {
+      const archiveHours = parseDuration(lifecycle.auto_archive_after);
+      if (
+        archiveHours !== null &&
+        hoursSinceUpdate > archiveHours &&
+        run.status === WorkflowRunStatus.COMPLETED
+      ) {
+        return WorkflowRunStatus.ARCHIVED;
+      }
+    }
+
     return null;
   }
 }

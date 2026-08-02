@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional
 
 from pydantic import BaseModel, ConfigDict
 
-from vela_sdk.fastmcp.locale import Locale, get_locale
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.fastmcp.protocols import (
     InMemoryWorkflowResolver,
     SessionProvider,

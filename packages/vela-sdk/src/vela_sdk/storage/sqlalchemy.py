@@ -27,6 +27,7 @@ class _WorkflowRunStatus(str, enum.Enum):
     PAUSED = "paused"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    ARCHIVED = "archived"
 
 
 class Base(DeclarativeBase):
@@ -70,6 +71,7 @@ def _to_state(model: WorkflowRunModel) -> WorkflowRunState:
         _WorkflowRunStatus.PAUSED: WorkflowRunStatus.PAUSED,
         _WorkflowRunStatus.COMPLETED: WorkflowRunStatus.COMPLETED,
         _WorkflowRunStatus.CANCELLED: WorkflowRunStatus.CANCELLED,
+        _WorkflowRunStatus.ARCHIVED: WorkflowRunStatus.ARCHIVED,
     }
     return WorkflowRunState(
         id=model.id,

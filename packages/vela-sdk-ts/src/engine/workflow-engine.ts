@@ -27,6 +27,7 @@ import type {
 import type { WorkflowStore } from "../storage/store.js";
 import { resolveDelegate } from "../delegate/registry.js";
 import type { DelegateContext } from "../delegate/types.js";
+import type { Locale } from "../locale/locale.js";
 
 // ---------------------------------------------------------------------------
 // Options types
@@ -53,6 +54,8 @@ export interface AdvanceOptions {
    * Defaults to a no-op when omitted.
    */
   log?: (msg: string, meta?: unknown) => void;
+  /** Locale for prompt assembly. Defaults to English when omitted. */
+  locale?: Locale;
 }
 
 // ---------------------------------------------------------------------------
@@ -76,6 +79,7 @@ export interface IWorkflowEngine {
     run: WorkflowRunState,
     step?: AnyStepDefinition,
     resourceResolver?: ResourceResolver,
+    locale?: Locale,
   ): string;
 
   getStep(
@@ -209,14 +213,74 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
     // normal capture pipeline kicks in below. Any caller-provided
     // `options.stepOutput` is ignored for delegate steps — the handler is
     // the source of truth.
+    //
+    // Unlike other step types, delegate handlers execute inside the engine
+    // itself (no agent round-trip), so `on_error` can be applied
+    // automatically here instead of leaving it to the caller.
     if (currentStep.type === "delegate") {
-      const delegateResult = await this.executeDelegateStep(
-        currentStep,
-        run,
-        workflowDef,
-        options?.signal,
-        options?.log,
-      );
+      if (!resolveDelegate(currentStep.delegate)) {
+        throw new Error(
+          `No handler registered for delegate '${currentStep.delegate}' (step '${currentStep.id}')`,
+        );
+      }
+
+      const onErr = currentStep.on_error;
+      const maxAttempts = onErr && onErr.retry > 0 ? onErr.retry + 1 : 1;
+      let delegateResult: unknown;
+      let handlerSucceeded = false;
+      let lastErrorMessage: string | undefined;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          delegateResult = await this.executeDelegateStep(
+            currentStep,
+            run,
+            workflowDef,
+            options?.signal,
+            options?.log,
+          );
+          handlerSucceeded = true;
+          break;
+        } catch (err) {
+          lastErrorMessage = err instanceof Error ? err.message : String(err);
+        }
+      }
+
+      if (!handlerSucceeded) {
+        const errorAction = this.handleOnError(
+          run,
+          currentStep,
+          lastErrorMessage ?? "delegate handler failed",
+        );
+        const errorMessage =
+          errorAction.message ?? lastErrorMessage ?? "delegate handler failed";
+
+        if (errorAction.action === "fallback" && errorAction.fallbackStep) {
+          const fallbackStep = this.getStep(workflowDef, errorAction.fallbackStep);
+          run = await this.store.updateStep(run.id, errorAction.fallbackStep, {
+            stateData: { _error: errorMessage },
+          });
+          if (fallbackStep) {
+            const prompt = this.assemblePrompt(
+              workflowDef,
+              run,
+              fallbackStep,
+              resourceResolver,
+              options?.locale,
+            );
+            return { run, prompt, completed: false, error: errorMessage };
+          }
+          return { run, completed: true, error: errorMessage };
+        }
+
+        // abort (default when no fallback is configured)
+        run = await this.store.updateStep(run.id, run.currentStep ?? null, {
+          status: WorkflowRunStatus.CANCELLED,
+          stateData: { _error: errorMessage },
+        });
+        return { run, completed: true, error: errorMessage };
+      }
+
       stepOutput =
         typeof delegateResult === "string"
           ? delegateResult
@@ -235,6 +299,7 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
         (wfDef, stepId) => this.getStep(wfDef, stepId ?? ""),
         (output, captures) => DefaultWorkflowEngine.parseStepOutput(output, captures),
         resourceResolver,
+        options?.locale,
       );
     }
 
@@ -295,6 +360,7 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
           run,
           nextStep,
           resourceResolver,
+          options?.locale,
         );
         const result: AdvanceResult = { run, prompt, completed: false };
         // Propagate delegate info for execute steps
@@ -324,6 +390,7 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
     run: WorkflowRunState,
     step?: AnyStepDefinition,
     resourceResolver?: ResourceResolver,
+    locale?: Locale,
   ): string {
     if (!step) {
       step = this.getStep(workflowDef, run.currentStep ?? "");
@@ -336,6 +403,7 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
       run,
       step,
       resourceResolver,
+      locale,
     );
   }
 

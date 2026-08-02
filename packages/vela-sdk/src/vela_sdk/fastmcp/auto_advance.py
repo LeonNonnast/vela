@@ -8,7 +8,7 @@ import structlog
 from vela_sdk.engine.types import AdvanceResult, WorkflowRunState, WorkflowRunStatus
 from vela_sdk.engine.workflow_engine import WorkflowEngine
 from vela_sdk.fastmcp.elicitation import ElicitationService
-from vela_sdk.fastmcp.locale import Locale, get_locale
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.schemas.resource import ResourceDefinition
 from vela_sdk.schemas.workflow import StepType, WorkflowDefinition
 from vela_sdk.storage.protocol import WorkflowStore
@@ -127,7 +127,7 @@ async def auto_advance_loop(
                 next_step_id = engine._resolve_next(step_def, None, wf_def)
                 if next_step_id is None:
                     result = await engine.advance(
-                        result.run, wf_def, resource_resolver=resource_resolver
+                        result.run, wf_def, resource_resolver=resource_resolver, locale=locale,
                     )
                     await store.commit()
             break
@@ -135,7 +135,7 @@ async def auto_advance_loop(
         result.run = await elicit_step_captures(ctx, engine, wf_def, result.run, store, locale=locale)
         if step_captures_complete(step_def, result.run):
             result = await engine.advance(
-                result.run, wf_def, resource_resolver=resource_resolver
+                result.run, wf_def, resource_resolver=resource_resolver, locale=locale,
             )
             await store.commit()
         else:

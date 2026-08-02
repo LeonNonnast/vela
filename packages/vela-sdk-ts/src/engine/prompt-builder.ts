@@ -11,6 +11,7 @@ import type {
   AnyStepDefinition,
   WorkflowDefinition,
 } from "../schemas/workflow.js";
+import { getLocale, type Locale } from "../locale/locale.js";
 
 /** Resolves a resource ref ID to its definition. */
 export type ResourceResolver = (refId: string) => ResourceDefinition | undefined;
@@ -84,7 +85,10 @@ export class PromptBuilder {
     step: AnyStepDefinition,
     resourceResolver: ResourceResolver,
     forceInline = false,
+    locale?: Locale,
   ): string[] {
+    const loc = locale ?? getLocale();
+
     // Merge: workflow-level first, step-level overrides
     const merged = new Map<string, { ref: string; inline?: boolean | null }>();
     for (const ref of workflowDef.resources) {
@@ -132,11 +136,9 @@ export class PromptBuilder {
       parts.push(...inlineParts);
     }
     if (referenceParts.length > 0) {
-      parts.push("### Available Resources");
+      parts.push(loc.engineResourcesHeading);
       parts.push(...referenceParts);
-      parts.push(
-        '*Lade mit `read_resource("URI")` oder `vela_get_resource(id="...")`.* ',
-      );
+      parts.push(loc.engineResourcesLoadHint);
     }
 
     return parts;
@@ -153,7 +155,9 @@ export class PromptBuilder {
     run: WorkflowRunState,
     step: AnyStepDefinition,
     resourceResolver?: ResourceResolver,
+    locale?: Locale,
   ): string {
+    const loc = locale ?? getLocale();
     const state = run.stateData;
     const context = PromptBuilder.buildTemplateContext(workflowDef, run);
 
@@ -165,11 +169,11 @@ export class PromptBuilder {
     parts.push("");
 
     // Progress overview
-    parts.push("### Fortschritt");
+    parts.push(loc.engineProgressHeading);
     for (const s of workflowDef.steps) {
       const sName = s.name ?? s.id;
       if (s.id === step.id) {
-        parts.push(`- **→ ${sName}** ← aktuell`);
+        parts.push(loc.engineProgressCurrentLine.replace("{step_name}", sName));
       } else if (s.capture.some((cap) => cap.key in state)) {
         parts.push(`- ~~${sName}~~ ✓`);
       } else {
@@ -180,10 +184,10 @@ export class PromptBuilder {
 
     // depends_on context
     if (step.depends_on.length > 0) {
-      parts.push("### Kontext aus vorherigen Steps:");
+      parts.push(loc.engineDependsOnHeading);
       for (const dep of step.depends_on) {
         for (const field of dep.fields) {
-          const value = state[field] ?? "(nicht erfasst)";
+          const value = state[field] ?? loc.engineNotCaptured;
           parts.push(`- **${field}**: ${value}`);
         }
       }
@@ -199,6 +203,7 @@ export class PromptBuilder {
         step,
         resourceResolver,
         isDelegate,
+        loc,
       );
       if (resourceParts.length > 0) {
         parts.push(...resourceParts);
@@ -208,11 +213,11 @@ export class PromptBuilder {
 
     // Workflow-level tool requirements
     if (workflowDef.tools.length > 0) {
-      parts.push("### Benötigte externe Tools");
+      parts.push(loc.engineToolsRequiredHeading);
       for (const t of workflowDef.tools) {
         const serverHint = t.server ? ` (${t.server})` : "";
         const descHint = t.description ? ` — ${t.description}` : "";
-        const reqHint = t.required ? "[erforderlich]" : "[optional]";
+        const reqHint = t.required ? loc.engineRequiredTag : loc.engineOptionalTag;
         parts.push(`- **${t.name}**${serverHint}${descHint} ${reqHint}`);
       }
       parts.push("");
@@ -221,8 +226,8 @@ export class PromptBuilder {
     // Step-level tool hints
     if (step.tools.length > 0) {
       const toolList = step.tools.map((t) => `\`${t}\``).join(", ");
-      parts.push("### Tools für diesen Step");
-      parts.push(`Nutze folgende Tools: ${toolList}`);
+      parts.push(loc.engineStepToolsHeading);
+      parts.push(loc.engineUseTheseTools.replace("{tools}", toolList));
       parts.push("");
     }
 
@@ -233,7 +238,7 @@ export class PromptBuilder {
     // Choice options
     if (step.type === "choice" && step.options.length > 0) {
       parts.push("");
-      parts.push("### Optionen:");
+      parts.push(loc.engineOptionsHeading);
       for (let i = 0; i < step.options.length; i++) {
         const opt = step.options[i];
         const desc = opt.description ? ` — ${opt.description}` : "";
@@ -245,33 +250,33 @@ export class PromptBuilder {
     if (step.capture.length > 0) {
       parts.push("");
       const keys = step.capture.map((c) => c.key);
-      parts.push(`*Dieser Step erfasst: ${keys.join(", ")}*`);
+      parts.push(loc.engineCapturesHint.replace("{keys}", keys.join(", ")));
     }
 
     // CTA
     parts.push("");
     switch (step.type) {
       case "confirm":
-        parts.push("**Bitte bestaetigen oder ablehnen.**");
+        parts.push(loc.engineCtaConfirm);
         break;
       case "choice":
-        parts.push("**Bitte eine Option wählen.**");
+        parts.push(loc.engineCtaChoice);
         break;
       case "freeform":
-        parts.push("**Bitte Eingabe machen.**");
+        parts.push(loc.engineCtaFreeform);
         break;
       case "execute":
         if ("delegate" in step && step.delegate) {
-          parts.push(`**Delegation an: ${step.delegate}**`);
+          parts.push(loc.engineCtaDelegate.replace("{delegate}", step.delegate));
         } else {
-          parts.push("**Ausführen, dann Abschluss bestaetigen.**");
+          parts.push(loc.engineCtaExecute);
         }
         break;
       case "dialog":
         if (state["_dialog_phase"]) {
-          parts.push("**Dialog fortsetzen — aktuelle Phase bearbeiten.**");
+          parts.push(loc.engineCtaDialogContinue);
         } else {
-          parts.push("**Dialog starten — advance aufrufen.**");
+          parts.push(loc.engineCtaDialogStart);
         }
         break;
       default:

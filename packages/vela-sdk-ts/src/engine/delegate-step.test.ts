@@ -17,7 +17,12 @@ import type { DelegateHandler } from "../delegate/types.js";
 import type { WorkflowDefinition } from "../schemas/workflow.js";
 
 /** Build a one-step workflow that runs the given delegate. */
-function buildWorkflow(delegate: string, captureKey = "result"): WorkflowDefinition {
+function buildWorkflow(
+  delegate: string,
+  captureKey = "result",
+  onError: unknown = null,
+  extraSteps: unknown[] = [],
+): WorkflowDefinition {
   return {
     id: "wf-delegate-test",
     version: "1.0.0",
@@ -55,11 +60,30 @@ function buildWorkflow(delegate: string, captureKey = "result"): WorkflowDefinit
         ],
         next: null,
         notes: true,
-        on_error: null,
+        on_error: onError,
         resources: [],
       },
+      ...extraSteps,
     ],
   } as unknown as WorkflowDefinition;
+}
+
+/** Minimal freeform step usable as an on_error fallback target. */
+function fallbackStep(id: string) {
+  return {
+    type: "freeform",
+    id,
+    name: null,
+    prompt: `Recovering via ${id}`,
+    depends_on: [],
+    fetch: [],
+    tools: [],
+    capture: [],
+    next: null,
+    notes: true,
+    on_error: null,
+    resources: [],
+  };
 }
 
 describe("DefaultWorkflowEngine — delegate step", () => {
@@ -132,5 +156,72 @@ describe("DefaultWorkflowEngine — delegate step", () => {
     const [run] = await engine.startOrResume(wf);
     const out = await engine.advance(run, wf);
     expect(out.run.stateData.result).toBe("from-setCapture");
+  });
+
+  it("retries a failing handler up to on_error.retry times, then succeeds", async () => {
+    let attempts = 0;
+    const handler: DelegateHandler = async () => {
+      attempts += 1;
+      if (attempts < 3) {
+        throw new Error("transient failure");
+      }
+      return { result: "ok" };
+    };
+    registerDelegate("flaky", handler);
+
+    const store = new InMemoryStore();
+    const engine = new DefaultWorkflowEngine(store);
+    const wf = buildWorkflow("flaky", "result", { retry: 2, fallback: null, abort: false, message: null });
+
+    const [run] = await engine.startOrResume(wf);
+    const out = await engine.advance(run, wf);
+
+    expect(attempts).toBe(3);
+    expect(out.error).toBeUndefined();
+    expect(out.run.stateData.result).toBe("ok");
+  });
+
+  it("falls back to on_error.fallback when the handler keeps failing", async () => {
+    const handler: DelegateHandler = async () => {
+      throw new Error("boom");
+    };
+    registerDelegate("always-fails", handler);
+
+    const store = new InMemoryStore();
+    const engine = new DefaultWorkflowEngine(store);
+    const wf = buildWorkflow(
+      "always-fails",
+      "result",
+      { retry: 0, fallback: "recover", abort: false, message: "handler unavailable" },
+      [fallbackStep("recover")],
+    );
+
+    const [run] = await engine.startOrResume(wf);
+    const out = await engine.advance(run, wf);
+
+    expect(out.completed).toBe(false);
+    expect(out.error).toBe("handler unavailable");
+    expect(out.run.currentStep).toBe("recover");
+    expect(out.run.stateData._error).toBe("handler unavailable");
+    expect(out.run.status).not.toBe("cancelled");
+  });
+
+  it("aborts (cancels the run) when the handler fails with no fallback configured", async () => {
+    const handler: DelegateHandler = async () => {
+      throw new Error("fatal");
+    };
+    registerDelegate("fatal-handler", handler);
+
+    const store = new InMemoryStore();
+    const engine = new DefaultWorkflowEngine(store);
+    const wf = buildWorkflow("fatal-handler", "result", { retry: 0, fallback: null, abort: true, message: null });
+
+    const [run] = await engine.startOrResume(wf);
+    const out = await engine.advance(run, wf);
+
+    expect(out.completed).toBe(true);
+    expect(out.error).toBe("fatal");
+    expect(out.run.status).toBe("cancelled");
+    expect(out.run.stateData._error).toBe("fatal");
   });
 });

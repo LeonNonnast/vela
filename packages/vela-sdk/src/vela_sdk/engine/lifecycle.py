@@ -44,6 +44,15 @@ class LifecycleChecker:
             ):
                 return WorkflowRunStatus.CANCELLED
 
+        if lifecycle.auto_archive_after:
+            archive_hours = _parse_duration_hours(lifecycle.auto_archive_after)
+            if (
+                archive_hours is not None
+                and hours_since_update > archive_hours
+                and run.status == WorkflowRunStatus.COMPLETED
+            ):
+                return WorkflowRunStatus.ARCHIVED
+
         return None
 
 

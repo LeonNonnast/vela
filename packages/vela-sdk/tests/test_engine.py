@@ -4,6 +4,7 @@ import pytest
 
 from vela_sdk.engine.types import WorkflowRunStatus
 from vela_sdk.engine.workflow_engine import WorkflowEngine, _parse_duration_hours
+from vela_sdk.locale import get_locale
 from vela_sdk.schemas.workflow import (
     CaptureDefinition,
     DialogPhaseDefinition,
@@ -283,6 +284,42 @@ class TestLifecycle:
         result = engine.check_lifecycle(run, lifecycle)
         assert result is None
 
+    def test_auto_archive(self, engine):
+        from datetime import datetime, timedelta, timezone
+        lifecycle = LifecycleDefinition(auto_archive_after="30d")
+        from vela_sdk.engine.types import WorkflowRunState
+        run = WorkflowRunState(
+            id="r", workflow_id="w", workflow_version="1",
+            status=WorkflowRunStatus.COMPLETED,
+            updated_at=datetime.now(timezone.utc) - timedelta(days=31),
+        )
+        result = engine.check_lifecycle(run, lifecycle)
+        assert result == WorkflowRunStatus.ARCHIVED
+
+    def test_no_archive_if_recent(self, engine):
+        from datetime import datetime, timezone
+        lifecycle = LifecycleDefinition(auto_archive_after="30d")
+        from vela_sdk.engine.types import WorkflowRunState
+        run = WorkflowRunState(
+            id="r", workflow_id="w", workflow_version="1",
+            status=WorkflowRunStatus.COMPLETED,
+            updated_at=datetime.now(timezone.utc),
+        )
+        result = engine.check_lifecycle(run, lifecycle)
+        assert result is None
+
+    def test_no_archive_if_not_completed(self, engine):
+        from datetime import datetime, timedelta, timezone
+        lifecycle = LifecycleDefinition(auto_archive_after="30d")
+        from vela_sdk.engine.types import WorkflowRunState
+        run = WorkflowRunState(
+            id="r", workflow_id="w", workflow_version="1",
+            status=WorkflowRunStatus.ACTIVE,
+            updated_at=datetime.now(timezone.utc) - timedelta(days=31),
+        )
+        result = engine.check_lifecycle(run, lifecycle)
+        assert result is None
+
 
 class TestAssemblePrompt:
     async def test_progress_indicator(self, engine, simple_workflow):
@@ -294,12 +331,18 @@ class TestAssemblePrompt:
     async def test_cta_freeform(self, engine, simple_workflow):
         run, _ = await engine.start_or_resume(simple_workflow)
         prompt = engine.assemble_prompt(simple_workflow, run)
-        assert "Bitte Eingabe machen" in prompt
+        assert "Please provide input" in prompt
 
     async def test_cta_confirm(self, engine, simple_workflow):
         run, _ = await engine.start_or_resume(simple_workflow)
         result = await engine.advance(run, simple_workflow, step_output="x")
         prompt = engine.assemble_prompt(simple_workflow, result.run)
+        assert "confirm or reject" in prompt
+
+    async def test_cta_confirm_respects_german_locale(self, engine, simple_workflow):
+        run, _ = await engine.start_or_resume(simple_workflow)
+        result = await engine.advance(run, simple_workflow, step_output="x")
+        prompt = engine.assemble_prompt(simple_workflow, result.run, locale=get_locale("de"))
         assert "bestaetigen oder ablehnen" in prompt
 
 

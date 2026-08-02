@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional
 
 from vela_sdk.engine.types import AdvanceResult, WorkflowRunState
 from vela_sdk.engine.workflow_engine import WorkflowEngine
-from vela_sdk.fastmcp.locale import Locale, get_locale
+from vela_sdk.locale import Locale, get_locale
 from vela_sdk.fastmcp.protocols import WorkflowResolver
 from vela_sdk.schemas.workflow import AnyStepDefinition, StepType, WorkflowDefinition
 from vela_sdk.storage.protocol import WorkflowStore
@@ -286,7 +286,7 @@ def build_step_response(
     locale: Optional[Locale] = None,
 ) -> dict:
     """Build response dict for current step."""
-    prompt = engine.assemble_prompt(wf_def, run, resource_resolver=resolver)
+    prompt = engine.assemble_prompt(wf_def, run, resource_resolver=resolver, locale=locale)
     return {
         "status": status,
         "run_id": run.id,

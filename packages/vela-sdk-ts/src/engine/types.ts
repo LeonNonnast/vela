@@ -13,6 +13,7 @@ export enum WorkflowRunStatus {
   PAUSED = "paused",
   COMPLETED = "completed",
   CANCELLED = "cancelled",
+  ARCHIVED = "archived",
 }
 
 // ---------------------------------------------------------------------------
@@ -62,6 +63,8 @@ export interface AdvanceResult {
   blocked?: boolean;
   /** State fields that are missing (unsatisfied dependencies). */
   blockedBy?: string[];
+  /** Set when a delegate step's handler failed and on_error was applied. */
+  error?: string | null;
 }
 
 // ---------------------------------------------------------------------------

@@ -12,6 +12,7 @@ class WorkflowRunStatus(str, enum.Enum):
     PAUSED = "paused"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    ARCHIVED = "archived"
 
 
 @dataclass
