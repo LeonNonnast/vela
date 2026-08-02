@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vela Docs — SDK Reference</title>
+  <meta name="description" content="Full reference for the Vela Python and TypeScript SDKs: workflow YAML, step types, extension points, storage, adapters, and known limitations.">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="stylesheet" href="../assets/vela-design-system.css">
+  <script src="../assets/vela-theme.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.7;
+    }
+
+    .docs-layout { display: flex; min-height: 100vh; }
+
+    /* --- Sidebar --- */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 260px;
+      background: var(--bg-secondary); border-right: 1px solid var(--border-subtle);
+      padding: var(--space-6) 0; overflow-y: auto; z-index: 100;
+      transition: transform 0.3s ease;
+    }
+    .sidebar-logo {
+      display: block; font-family: var(--font-display); font-size: var(--text-xl);
+      font-weight: 700; background: var(--gradient-heading);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      text-decoration: none; padding: 0 var(--space-6) var(--space-4);
+      border-bottom: 1px solid var(--border-subtle); margin-bottom: var(--space-4);
+    }
+    .sidebar-label {
+      font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-muted); padding: var(--space-3) var(--space-6) var(--space-1);
+    }
+    .sidebar-link {
+      display: block; padding: var(--space-2) var(--space-6); font-size: var(--text-sm);
+      color: var(--text-secondary); text-decoration: none; transition: var(--transition-fast);
+      border-left: 3px solid transparent;
+    }
+    .sidebar-link:hover { color: var(--text-accent); background: var(--bg-accent); }
+    .sidebar-link.active {
+      color: var(--text-accent); border-left-color: var(--accent-blue);
+      background: var(--bg-accent); font-weight: 500;
+    }
+    .sidebar-link.external::after { content: " \2197"; font-size: 0.75em; opacity: 0.5; }
+    .sidebar-footer { padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); }
+    .sidebar-footer a { font-size: var(--text-xs); color: var(--text-muted); text-decoration: none; }
+    .sidebar-footer a:hover { color: var(--text-accent); }
+
+    /* --- Mobile hamburger --- */
+    .menu-toggle {
+      display: none; position: fixed; top: var(--space-3); left: var(--space-3); z-index: 200;
+      width: 40px; height: 40px; background: var(--bg-secondary); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm); cursor: pointer; align-items: center; justify-content: center;
+      color: var(--text-primary); font-size: 20px; line-height: 1;
+    }
+    .menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+
+    /* --- Content --- */
+    .content { margin-left: 260px; flex: 1; min-width: 0; max-width: 860px; padding: var(--space-12) var(--space-8) var(--space-16); }
+
+    h1 {
+      font-family: var(--font-display); font-size: var(--text-3xl); font-weight: 700;
+      background: var(--gradient-heading); -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: var(--space-2); line-height: 1.2;
+    }
+    h2 {
+      font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 600;
+      color: var(--text-heading); margin-top: var(--space-12); margin-bottom: var(--space-4);
+      padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-subtle);
+    }
+    h3 {
+      font-family: var(--font-display); font-size: var(--text-lg); font-weight: 600;
+      color: var(--text-heading); margin-top: var(--space-8); margin-bottom: var(--space-3);
+    }
+    h4 { font-size: var(--text-md); font-weight: 600; color: var(--text-heading); margin-top: var(--space-6); margin-bottom: var(--space-2); }
+    p { margin-bottom: var(--space-4); color: var(--text-secondary); }
+    .lead { font-size: var(--text-lg); color: var(--text-secondary); margin-bottom: var(--space-8); }
+    a { color: var(--text-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    strong { color: var(--text-primary); font-weight: 600; }
+    ul, ol { margin-bottom: var(--space-4); padding-left: var(--space-6); color: var(--text-secondary); }
+    li { margin-bottom: var(--space-2); }
+
+    /* --- Code --- */
+    code {
+      font-family: var(--font-mono); font-size: 0.875em; background: var(--bg-surface);
+      border: 1px solid var(--border-subtle); border-radius: 4px; padding: 2px 6px; color: var(--text-accent);
+    }
+    .code-block {
+      position: relative; margin-bottom: var(--space-6); border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle); background: var(--bg-secondary); overflow-x: auto;
+    }
+    .code-block pre {
+      display: block; padding: var(--space-4) var(--space-5); font-family: var(--font-mono);
+      font-size: var(--text-sm); line-height: 1.7; color: var(--text-primary); white-space: pre;
+    }
+    .code-block[data-lang]::before {
+      content: attr(data-lang); position: absolute; top: 0; right: 0; font-size: var(--text-xs);
+      color: var(--text-muted); padding: var(--space-1) var(--space-3);
+      border-bottom-left-radius: var(--radius-sm); background: var(--bg-surface);
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .copy-btn {
+      position: absolute; top: var(--space-3); right: var(--space-3);
+      background: var(--bg-surface); border: 1px solid var(--border-subtle);
+      color: var(--text-muted); border-radius: var(--radius-sm);
+      padding: var(--space-1) var(--space-3); cursor: pointer;
+      font-size: var(--text-xs); font-family: var(--font-body);
+      transition: var(--transition-fast); z-index: 1;
+    }
+    .code-block[data-lang] .copy-btn { top: var(--space-8); }
+    .copy-btn:hover { color: var(--text-primary); border-color: var(--border-hover); }
+    .copy-btn.copied { color: var(--text-success); border-color: var(--text-success); }
+
+    /* --- Tables --- */
+    .table-wrap { overflow-x: auto; margin-bottom: var(--space-6); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    thead { background: var(--bg-surface); }
+    th { text-align: left; padding: var(--space-3) var(--space-4); font-weight: 600; color: var(--text-heading); border-bottom: 1px solid var(--border-subtle); white-space: nowrap; }
+    td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-surface); }
+    td code { font-size: 0.85em; white-space: nowrap; }
+
+    /* --- Tabs --- */
+    .doc-tabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); }
+    .doc-tab {
+      background: none; border: 1px solid var(--border-subtle); color: var(--text-muted);
+      border-radius: var(--radius-md); padding: var(--space-2) var(--space-5); cursor: pointer;
+      font-size: var(--text-sm); font-family: var(--font-mono); transition: var(--transition-fast);
+    }
+    .doc-tab:hover { color: var(--text-secondary); border-color: var(--border-hover); }
+    .doc-tab.active { color: var(--text-accent); border-color: var(--border-accent); background: var(--bg-accent); }
+    .doc-panel { display: none; }
+    .doc-panel.active { display: block; }
+
+    /* --- Cards --- */
+    .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-4); margin-bottom: var(--space-6); }
+    .doc-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-5); transition: var(--transition-fast); }
+    .doc-card:hover { border-color: var(--border-hover); background: var(--bg-surface-hover); }
+    .doc-card h4 { margin-top: 0; margin-bottom: var(--space-1); font-size: var(--text-md); }
+    .doc-card p { margin: 0; font-size: var(--text-sm); color: var(--text-muted); }
+
+    /* --- Callouts --- */
+    .callout {
+      border-radius: var(--radius-sm); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-6);
+      font-size: var(--text-sm); line-height: 1.7; border-left: 3px solid var(--accent-blue);
+      background: var(--accent-blue-soft); color: var(--text-secondary);
+    }
+    .callout strong { color: var(--text-accent); }
+    .callout.callout--gold { border-left-color: var(--accent-gold); background: var(--accent-gold-soft); }
+    .callout.callout--gold strong { color: var(--accent-gold); }
+    .callout.callout--warn { border-left-color: var(--accent-red); background: var(--accent-red-soft); }
+    .callout.callout--warn strong { color: var(--text-error-accent); }
+
+    .section-divider { height: 2px; max-width: 200px; margin: var(--space-12) 0; background: var(--gradient-line); border-radius: var(--radius-full); opacity: 0.4; }
+
+    .limitations-list { list-style: none; padding-left: 0; }
+    .limitations-list li {
+      padding: var(--space-4) var(--space-5); margin-bottom: var(--space-3);
+      background: var(--bg-surface); border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--accent-red); border-radius: var(--radius-sm);
+    }
+    .limitations-list .tag {
+      display: inline-block; font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-gold); margin-bottom: var(--space-2);
+    }
+
+    footer.page-footer { text-align: center; padding: var(--space-12) 0 0; color: var(--text-muted); font-size: var(--text-sm); }
+
+    /* --- Responsive --- */
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .menu-toggle { display: flex; }
+      .menu-overlay.visible { display: block; }
+      .content { margin-left: 0; padding: var(--space-16) var(--space-5) var(--space-12); }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      h1 { font-size: var(--text-2xl); }
+      h2 { font-size: var(--text-xl); }
+      .content { padding: var(--space-16) var(--space-4) var(--space-10); }
+    }
+    @media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
+  </style>
+</head>
+<body>
+
+  <button class="menu-toggle" id="menu-toggle" aria-label="Toggle navigation">&#9776;</button>
+  <div class="menu-overlay" id="menu-overlay"></div>
+
+  <div class="docs-layout">
+
+    <nav class="sidebar" id="sidebar">
+      <a href="../" class="sidebar-logo">VELA</a>
+
+      <div class="sidebar-label">Start</div>
+      <a href="#getting-started" class="sidebar-link">Getting Started</a>
+
+      <div class="sidebar-label">Core Concepts</div>
+      <a href="#core-yaml" class="sidebar-link">Workflow YAML</a>
+      <a href="#core-steps" class="sidebar-link">Step Types</a>
+      <a href="#core-templating" class="sidebar-link">Templating</a>
+      <a href="#core-identity" class="sidebar-link">Identity-Based Resume</a>
+
+      <div class="sidebar-label">Python SDK</div>
+      <a href="#py-install" class="sidebar-link">Installation</a>
+      <a href="#py-velaworkflows" class="sidebar-link">VelaWorkflows</a>
+      <a href="#py-extension-points" class="sidebar-link">Extension Points</a>
+      <a href="#py-storage" class="sidebar-link">Storage</a>
+      <a href="#py-adapters" class="sidebar-link">Adapters</a>
+      <a href="#py-locale" class="sidebar-link">Locale &amp; Tool Names</a>
+
+      <div class="sidebar-label">TypeScript SDK</div>
+      <a href="#ts-install" class="sidebar-link">Installation</a>
+      <a href="#ts-velaworkflows" class="sidebar-link">VelaWorkflows</a>
+      <a href="#ts-extension-points" class="sidebar-link">Extension Points</a>
+      <a href="#ts-storage" class="sidebar-link">Storage</a>
+      <a href="#ts-adapters" class="sidebar-link">Adapters</a>
+      <a href="#ts-delegate" class="sidebar-link">Delegate Steps</a>
+      <a href="#ts-locale" class="sidebar-link">Locale &amp; Tool Names</a>
+
+      <div class="sidebar-label">Reference</div>
+      <a href="#known-limitations" class="sidebar-link">Known Limitations</a>
+      <a href="https://github.com/LeonNonnast/vela" class="sidebar-link external">GitHub</a>
+
+      <div class="sidebar-footer">
+        <a href="../">&larr; Back to vela.nonnast.dev</a>
+      </div>
+    </nav>
+
+    <main class="content">
+
+      <section id="getting-started">
+        <h1>Vela Documentation</h1>
+        <p class="lead">Reference for both Vela SDKs — the Python package on PyPI and the TypeScript package on npm (same name, two separate installs, two separate implementations of the same idea).</p>
+        <p>Both SDKs turn a plain MCP server into one with pausable, resumable, stateful workflows defined as YAML. Pick the SDK matching your server's language, read <a href="#core-yaml">Core Concepts</a> once (it applies to both), then jump to the <a href="#py-install">Python</a> or <a href="#ts-install">TypeScript</a> section for the language-specific API.</p>
+        <div class="card-grid">
+          <div class="doc-card">
+            <h4>Python</h4>
+            <p><code>pip install vela-sdk[fastmcp]</code> — FastMCP, LangChain, and Azure AI Agents adapters, SQLAlchemy storage.</p>
+          </div>
+          <div class="doc-card">
+            <h4>TypeScript</h4>
+            <p><code>npm install vela-sdk</code> — FastMCP, official MCP SDK, LangChain, Azure AI Agents, and headless adapters.</p>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Note:</strong> <code>vela-sdk</code> on PyPI is currently registered by an unrelated project. If <code>pip install vela-sdk</code> doesn't resolve to this SDK for you, the package hasn't been re-published under its final name yet — check <a href="https://github.com/LeonNonnast/vela">the GitHub repo</a> for the current status.
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <section id="core-yaml">
+        <h2>Core Concepts</h2>
+        <h3>Workflow YAML</h3>
+        <p>A workflow is a flat list of steps, each with a <code>prompt</code> the agent shows the user and an optional <code>capture</code> list describing what to store from the step's output. Both SDKs consume the same YAML shape.</p>
+        <div class="code-block" data-lang="yaml">
+          <button class="copy-btn" data-copy="yaml-cook-recipe">Copy</button>
+          <pre id="yaml-cook-recipe">id: cook-recipe
+name: Cook a Recipe
+steps:
+  - id: choose
+    type: choice
+    prompt: "What do you want to cook?"
+    options:
+      - key: pasta
+        label: Pasta Carbonara
+      - key: curry
+        label: Thai Green Curry
+  - id: ingredients
+    type: confirm
+    prompt: "Check these ingredients: {{state.recipe_ingredients}}"
+  - id: cooking
+    type: execute
+    prompt: "Follow the recipe step by step."
+    capture:
+      - key: result
+        elicit: never</pre>
+        </div>
+        <p>Every step also accepts: <code>depends_on</code> (block advancing until named <code>state_data</code> fields exist), <code>fetch</code> (declared but currently inert — see <a href="#known-limitations">Known Limitations</a>), <code>tools</code> (tool names surfaced to the agent for this step), <code>next</code> (explicit next-step override), <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code> — invoked by your own error handling, not automatically), and <code>resources</code> (inlined if short, referenced via a <code>vela://</code> URI if long).</p>
+
+        <h3 id="core-steps">The Step Types</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Type</th><th>Behavior</th><th>Auto-advance</th></tr></thead>
+            <tbody>
+              <tr><td><code>freeform</code></td><td>Open-ended step, no extra fields. Captures parsed from whatever the agent outputs.</td><td>Interactive — never silently skipped</td></tr>
+              <tr><td><code>choice</code></td><td><code>options[]</code> (<code>key</code>, <code>label</code>, <code>next?</code>). Branches to the matching option's <code>next</code> if the output matches a <code>key</code>; otherwise falls back to the step's own <code>next</code>, then sequential order.</td><td>Interactive</td></tr>
+              <tr><td><code>confirm</code></td><td>Yes/no style step; output is typically <code>"confirmed"</code>/<code>"rejected"</code>.</td><td>Interactive</td></tr>
+              <tr><td><code>execute</code></td><td>Agent performs a task and reports back via an explicit <code>advance(output=...)</code> call. <code>instructions</code> + a <code>delegate</code> string hint can be attached — see the <a href="#ts-delegate">note on delegate hints vs. delegate steps</a>.</td><td>Always breaks — agent must call advance explicitly</td></tr>
+              <tr><td><code>dialog</code></td><td>Multi-phase conversation. <code>phases[]</code> (explicit) or a built-in <code>mode</code> (<code>brainstorming</code>, <code>requirements</code>, <code>planning</code>, <code>review</code>, <code>freeform</code>). Each phase's output is collected; after the last phase, all outputs are merged into one markdown block before <code>capture</code> runs.</td><td>Always breaks</td></tr>
+              <tr><td><code>workflow</code></td><td><code>workflow_ref</code> + <code>params_mapping</code>. Pauses the parent run, auto-starts the referenced sub-workflow (params resolved from the mapping, then by matching names), and auto-resumes the parent when the child completes.</td><td>Always breaks (orchestrated one level up)</td></tr>
+              <tr><td><code>mcp_call</code></td><td><code>mcp_tool</code> / <code>mcp_source</code> / <code>mcp_params</code> fields exist in the schema, but <strong>neither engine executes the call</strong> — see <a href="#known-limitations">Known Limitations</a>. Today it behaves like a generic sequential step; the agent must invoke the tool itself.</td><td>Interactive (by necessity)</td></tr>
+              <tr><td><code>delegate</code></td><td><strong>TypeScript SDK only.</strong> Forwards execution to an app-registered handler (via a registry) synchronously, in-process — no agent round-trip. See <a href="#ts-delegate">Delegate Steps</a>.</td><td>Resolved in-engine, in the same <code>advance()</code> call</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="core-templating">Templating</h3>
+        <p>Step <code>prompt</code> strings (and, in TypeScript, a <code>delegate</code> step's <code>task</code> payload) resolve these variables:</p>
+        <ul>
+          <li><code>{{params.x}}</code> — a param passed when the workflow started</li>
+          <li><code>{{steps.step_id.capture_key}}</code> — a value captured by an earlier step</li>
+          <li><code>{{state.x}}</code> — anything currently in the run's state data</li>
+        </ul>
+        <div class="callout callout--warn">
+          <strong>Not implemented:</strong> <code>{{fetch.x}}</code>, <code>{{resolved.x}}</code>, and <code>{{project.x}}</code> appear in the YAML schema's comments as template variables, but neither engine's template-context builder actually populates them. Don't rely on them — see <a href="#known-limitations">Known Limitations</a>.
+        </div>
+
+        <h3 id="core-identity">Identity-Based Resume</h3>
+        <p>Flag a workflow param <code>identity: true</code> and, when a run is started with that param set, the engine looks up any existing active/paused run with the same identity params first (<code>store.find_by_identity</code> / <code>store.findByIdentity</code>) instead of creating a new one. This is how a workflow "remembers" it's already mid-process for a given entity — e.g. the same <code>employee_name</code> — rather than starting a duplicate run every time.</p>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <section id="py-install">
+        <h2>Python SDK</h2>
+        <p>Package: <code>packages/vela-sdk/</code> &middot; distributed on PyPI as <code>vela-sdk</code>.</p>
+
+        <h3>Installation</h3>
+        <div class="code-block" data-lang="bash">
+          <button class="copy-btn" data-copy="py-install-cmd">Copy</button>
+          <pre id="py-install-cmd">pip install vela-sdk[fastmcp]        # FastMCP integration (most common)
+pip install vela-sdk[sqlalchemy]     # SQL-backed WorkflowStore
+pip install vela-sdk[langchain]      # LangChain VelaToolkit
+pip install vela-sdk[azure-agents]   # Azure AI Agents VelaToolset
+pip install vela-sdk[all]            # everything</pre>
+        </div>
+      </section>
+
+      <section id="py-velaworkflows">
+        <h3>VelaWorkflows</h3>
+        <p>Positional <code>mcp</code> argument, plus a <code>workflows_dir</code> that's recursively scanned for YAML files at construction time.</p>
+        <div class="code-block" data-lang="python">
+          <button class="copy-btn" data-copy="py-quickstart">Copy</button>
+          <pre id="py-quickstart">from fastmcp import FastMCP
+from vela_sdk import VelaWorkflows
+
+mcp = FastMCP("cooking-assistant")
+workflows = VelaWorkflows(mcp, workflows_dir="./workflows/")</pre>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Param</th><th>Type</th><th>Default</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><code>mcp</code></td><td><code>FastMCP</code></td><td>required</td><td>The server instance to register tools/prompts on.</td></tr>
+              <tr><td><code>store</code></td><td><code>WorkflowStore</code></td><td><code>InMemoryStore()</code></td><td>Where run state lives.</td></tr>
+              <tr><td><code>workflows_dir</code></td><td><code>str | list[str]</code></td><td><code>None</code></td><td>Directory (or directories) recursively scanned for workflow YAML, <code>~</code> expanded.</td></tr>
+              <tr><td><code>initial_workflows</code></td><td><code>dict[str, WorkflowDefinition]</code></td><td><code>None</code></td><td>Pre-parsed workflows, keyed <code>"id@version"</code>.</td></tr>
+              <tr><td><code>resource_resolver</code></td><td><code>Callable[[str], ResourceDefinition | None]</code></td><td><code>None</code></td><td>Custom resource lookup.</td></tr>
+              <tr><td><code>tool_prefix</code></td><td><code>str</code></td><td><code>"workflow"</code></td><td>Prefix for the 3 registered tools.</td></tr>
+              <tr><td><code>tool_name_format</code></td><td><code>dict[str, str]</code></td><td><code>{}</code></td><td>Per-tool name override — keys <code>advance</code>/<code>status</code>/<code>list</code>.</td></tr>
+              <tr><td><code>auto_advance</code></td><td><code>bool</code></td><td><code>True</code></td><td>Loop <code>elicit &rarr; advance</code> automatically until an interactive step is hit.</td></tr>
+              <tr><td><code>register_prompts</code></td><td><code>bool</code></td><td><code>True</code></td><td>Also register one MCP prompt per workflow.</td></tr>
+              <tr><td><code>workflow_resolver</code></td><td><code>WorkflowResolver</code></td><td><code>InMemoryWorkflowResolver</code></td><td>See <a href="#py-extension-points">Extension Points</a>.</td></tr>
+              <tr><td><code>session_provider</code></td><td><code>SessionProvider</code></td><td><code>SimpleSessionProvider</code></td><td>See <a href="#py-extension-points">Extension Points</a>.</td></tr>
+              <tr><td><code>param_filter</code></td><td><code>ParamFilter</code></td><td><code>DefaultParamFilter</code></td><td>See <a href="#py-extension-points">Extension Points</a>.</td></tr>
+              <tr><td><code>project_resolver</code></td><td><code>ProjectResolver</code></td><td><code>None</code></td><td>See <a href="#py-extension-points">Extension Points</a>.</td></tr>
+              <tr><td><code>locale</code></td><td><code>Locale</code></td><td><code>Locale.en()</code></td><td>See <a href="#py-locale">Locale &amp; Tool Names</a>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><code>workflows.register(workflow)</code> adds a workflow definition at runtime after construction.</p>
+      </section>
+
+      <section id="py-extension-points">
+        <h3>Extension Points</h3>
+        <p>Four <code>Protocol</code> classes (<code>fastmcp/protocols.py</code>), each swappable via a keyword argument to <code>VelaWorkflows</code>. Shared with the LangChain and Azure adapters, except <code>ParamFilter</code>/<code>ProjectResolver</code>, which are FastMCP-only (those adapters don't elicit params).</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Protocol</th><th>Method(s)</th><th>Why implement one</th></tr></thead>
+            <tbody>
+              <tr><td><code>WorkflowResolver</code></td><td><code>async get_workflow(workflow_id, version=None)</code><br><code>async list_workflows()</code></td><td>Load workflows from a database or remote source instead of a static YAML directory.</td></tr>
+              <tr><td><code>SessionProvider</code></td><td><code>session() -&gt; AsyncContextManager[WorkflowStore]</code></td><td>Manage a store's lifecycle per call — e.g. one DB session per request.</td></tr>
+              <tr><td><code>ParamFilter</code></td><td><code>filter_missing_params(wf_def, provided_params)</code></td><td>Control which params trigger the elicitation dialog when a workflow starts.</td></tr>
+              <tr><td><code>ProjectResolver</code></td><td><code>async resolve_project_id(project_slug=None)</code></td><td>Only if your server has a project concept — resolves a slug to an ID for the advance tool.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="code-block" data-lang="python">
+          <button class="copy-btn" data-copy="py-custom-resolver">Copy</button>
+          <pre id="py-custom-resolver">class DatabaseWorkflowResolver:
+    async def get_workflow(self, workflow_id, version=None):
+        return await db.fetch_workflow(workflow_id, version)
+
+    async def list_workflows(self):
+        return await db.fetch_all_workflows()
+
+workflows = VelaWorkflows(mcp, workflow_resolver=DatabaseWorkflowResolver())</pre>
+        </div>
+      </section>
+
+      <section id="py-storage">
+        <h3>Storage</h3>
+        <p>The <code>WorkflowStore</code> protocol has 6 async methods: <code>find_by_identity</code>, <code>create_run</code>, <code>update_step</code>, <code>get_by_id</code>, <code>list_active</code>, <code>commit</code>.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Store</th><th>Backend</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>InMemoryStore</code></td><td>Python dict</td><td>Default. Zero dependencies, no persistence across restarts.</td></tr>
+              <tr><td><code>SQLAlchemyStore</code></td><td>Async SQLAlchemy ORM</td><td>Own standalone <code>workflow_runs</code> table (no foreign keys into any other schema). Three init modes: <code>session=</code>, <code>session_factory=</code>, or <code>database_url=</code> (builds its own async engine). Call <code>await store.ensure_tables()</code> once to create the table.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Custom stores just implement the 6-method protocol directly — no base class required.</p>
+      </section>
+
+      <section id="py-adapters">
+        <h3>Adapters</h3>
+        <h4>LangChain — <code>VelaToolkit</code></h4>
+        <div class="code-block" data-lang="python">
+          <button class="copy-btn" data-copy="py-langchain">Copy</button>
+          <pre id="py-langchain">from vela_sdk.langchain import VelaToolkit
+
+toolkit = VelaToolkit(workflows_dir="./workflows/")
+tools = toolkit.get_tools()  # 3 BaseTool instances: advance, status, list</pre>
+        </div>
+        <p>Thinner than the FastMCP integration — LangChain tools have no elicitation primitive, so params/captures aren't auto-elicited.</p>
+
+        <h4>Azure AI Agents — <code>VelaToolset</code></h4>
+        <div class="code-block" data-lang="python">
+          <button class="copy-btn" data-copy="py-azure">Copy</button>
+          <pre id="py-azure">from vela_sdk.azure_agents import VelaToolset
+
+toolset = VelaToolset(workflows_dir="./workflows/")
+functions = toolset.get_functions()             # set[Callable], for Azure's auto schema-gen
+tool_set = toolset.get_toolset()                # azure.ai.agents.models.ToolSet
+instructions = toolset.get_prompt_advisor()      # markdown blurb for additional_instructions=</pre>
+        </div>
+        <p>Requires the optional <code>azure-ai-agents</code> dependency (<code>pip install vela-sdk[azure-agents]</code>). Mirrors the LangChain toolkit's structure and the same extension points.</p>
+      </section>
+
+      <section id="py-locale">
+        <h3>Locale &amp; Tool Names</h3>
+        <div class="code-block" data-lang="python">
+          <button class="copy-btn" data-copy="py-locale-code">Copy</button>
+          <pre id="py-locale-code">from vela_sdk.locale import Locale
+
+workflows = VelaWorkflows(mcp, locale=Locale.de())
+# or partial override:
+custom = dataclasses.replace(Locale.en(), confirm_prompt="Bitte bestätigen?")</pre>
+        </div>
+        <p><code>tool_prefix</code> renames all 3 tools at once (<code>{prefix}_advance/status/list</code>); <code>tool_name_format={"advance": "do_step"}</code> overrides them individually.</p>
+        <div class="callout callout--warn">
+          <strong>Partial i18n:</strong> <code>locale=</code> only covers the FastMCP integration layer's own strings (the <code>next_action</code> text, elicitation prompts). The step <em>prompt body</em> and dialog-phase headers assembled by the workflow engine itself are currently hardcoded German regardless of the configured locale. Setting <code>locale=Locale.en()</code> gives you an English <code>next_action</code> wrapped around a German-language step prompt.
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <section id="ts-install">
+        <h2>TypeScript SDK</h2>
+        <p>Package: <code>packages/vela-sdk-ts/</code> &middot; distributed on npm as <code>vela-sdk</code> — a separate implementation from the Python package of the same name, not a port sharing code.</p>
+        <h3>Installation</h3>
+        <div class="code-block" data-lang="bash">
+          <button class="copy-btn" data-copy="ts-install-cmd">Copy</button>
+          <pre id="ts-install-cmd">npm install vela-sdk</pre>
+        </div>
+        <p>Adapters are separate subpath exports so you only pull in what you use:</p>
+        <div class="code-block" data-lang="typescript">
+          <button class="copy-btn" data-copy="ts-subpaths">Copy</button>
+          <pre id="ts-subpaths">import { FastMcpAdapter } from "vela-sdk/adapters/fastmcp";
+import { OfficialSdkAdapter } from "vela-sdk/adapters/mcp-sdk";
+import { createVelaToolkit } from "vela-sdk/adapters/langchain";
+import { createVelaAzureToolset } from "vela-sdk/adapters/azure-agents";
+import { HeadlessAdapter } from "vela-sdk"; // main entry, no subpath</pre>
+        </div>
+      </section>
+
+      <section id="ts-velaworkflows">
+        <h3>VelaWorkflows</h3>
+        <p>A single options object — not a positional <code>mcp</code> argument. <code>workflows</code> is an array of YAML <em>strings</em>, not a directory path to scan.</p>
+        <div class="code-block" data-lang="typescript">
+          <button class="copy-btn" data-copy="ts-quickstart">Copy</button>
+          <pre id="ts-quickstart">import { FastMCP } from "fastmcp";
+import { VelaWorkflows } from "vela-sdk";
+import { FastMcpAdapter } from "vela-sdk/adapters/fastmcp";
+
+const server = new FastMCP({ name: "my-server", version: "1.0.0" });
+const vela = new VelaWorkflows({
+  server: new FastMcpAdapter(server),
+  workflows: [myWorkflowYaml],
+});
+server.start({ transportType: "stdio" });</pre>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Option</th><th>Type</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td><code>server</code></td><td><code>McpServerAdapter</code></td><td><code>new HeadlessAdapter()</code></td></tr>
+              <tr><td><code>store</code></td><td><code>WorkflowStore</code></td><td><code>new InMemoryStore()</code></td></tr>
+              <tr><td><code>workflows</code> / <code>agents</code> / <code>resources</code></td><td><code>string[]</code> (YAML)</td><td><code>[]</code></td></tr>
+              <tr><td><code>toolPrefix</code></td><td><code>string</code></td><td><code>"workflow"</code></td></tr>
+              <tr><td><code>toolNameFormat</code></td><td><code>Record&lt;string,string&gt;</code></td><td><code>{}</code></td></tr>
+              <tr><td><code>locale</code></td><td><code>Locale</code></td><td>English</td></tr>
+              <tr><td><code>autoAdvance</code></td><td><code>boolean</code></td><td><code>true</code></td></tr>
+              <tr><td><code>registerPrompts</code></td><td><code>boolean</code></td><td><code>true</code></td></tr>
+              <tr><td><code>workflowResolver</code></td><td><code>WorkflowResolver</code></td><td><code>InMemoryWorkflowResolver</code></td></tr>
+              <tr><td><code>sessionProvider</code></td><td><code>SessionProvider</code></td><td><code>SimpleSessionProvider</code></td></tr>
+              <tr><td><code>paramFilter</code></td><td><code>ParamFilter</code></td><td><code>DefaultParamFilter</code></td></tr>
+              <tr><td><code>projectResolver</code></td><td><code>ProjectResolver</code></td><td><code>undefined</code></td></tr>
+              <tr><td><code>resourceResolver</code></td><td><code>ResourceResolver</code></td><td><code>undefined</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><code>vela.register(workflow)</code> adds a workflow at runtime; <code>vela.buildWorkflowPrompt(wf, advanceName, locale, ctx)</code> is a public, reusable prompt builder for custom bridging.</p>
+      </section>
+
+      <section id="ts-extension-points">
+        <h3>Extension Points</h3>
+        <p>Same four concepts as the Python SDK, same names, TypeScript interfaces instead of Python protocols (<code>src/mcp/protocols.ts</code>):</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Interface</th><th>Method(s)</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td><code>WorkflowResolver</code></td><td><code>getWorkflow(id, version?)</code>, <code>listWorkflows()</code></td><td><code>InMemoryWorkflowResolver</code></td></tr>
+              <tr><td><code>SessionProvider</code></td><td><code>session(): AsyncSession</code> — <code>{ store, close() }</code>, manual dispose</td><td><code>SimpleSessionProvider</code></td></tr>
+              <tr><td><code>ParamFilter</code></td><td><code>filterMissingParams(wfDef, providedParams)</code></td><td><code>DefaultParamFilter</code></td></tr>
+              <tr><td><code>ProjectResolver</code></td><td><code>resolveProjectId(projectSlug?)</code></td><td>none — <code>project_slug</code> ignored if unset</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="ts-storage">
+        <h3>Storage</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Store</th><th>Backend</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>InMemoryStore</code></td><td>JS <code>Map</code></td><td>Default. No persistence.</td></tr>
+              <tr><td><code>LocalStorageStore</code></td><td>Any <code>KVStorage</code></td><td><code>new LocalStorageStore(storage, prefix = "vela:")</code>. <code>KVStorage</code> is a minimal <code>getItem</code>/<code>setItem</code>/<code>removeItem</code> interface (sync or async) — compatible with browser <code>localStorage</code>, <code>node-localstorage</code>, or a Redis/Cloudflare-KV wrapper you write. Persists each run as <code>vela:run:&lt;id&gt;</code> plus a <code>vela:index</code> array for scans.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <strong>No SQL store:</strong> unlike the Python SDK's <code>SQLAlchemyStore</code>, there is no ORM-backed store in the TypeScript SDK today. Implement <code>WorkflowStore</code> directly (6 methods, no base class) if you need one.
+        </div>
+      </section>
+
+      <section id="ts-adapters">
+        <h3>Adapters</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Adapter</th><th>Elicitation</th><th>Use case</th></tr></thead>
+            <tbody>
+              <tr><td><code>FastMcpAdapter</code></td><td>Not supported — <code>ctx.elicit</code> throws</td><td>Bridges the <code>fastmcp</code> npm package.</td></tr>
+              <tr><td><code>OfficialSdkAdapter</code></td><td>Full support via <code>server.elicitInput</code></td><td>Bridges <code>@modelcontextprotocol/sdk</code>'s <code>McpServer</code>.</td></tr>
+              <tr><td><code>HeadlessAdapter</code></td><td>N/A — no transport</td><td>Default when no <code>server</code> is given. Stores tools/prompts in-memory (<code>getTools()</code>/<code>getPrompts()</code>) for custom bridging — Electron IPC, an Agent SDK's own MCP layer, etc.</td></tr>
+              <tr><td><code>LangChainAdapter</code></td><td>Declines (agent-driven fallback)</td><td>Via <code>createVelaToolkit()</code> — LangChain.js <code>DynamicStructuredTool</code>s.</td></tr>
+              <tr><td><code>AzureAgentsAdapter</code></td><td>Declines (agent-driven fallback)</td><td>Via <code>createVelaAzureToolset()</code> — Azure AI Foundry native function-tool format (Azure has no MCP support).</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="code-block" data-lang="typescript">
+          <button class="copy-btn" data-copy="ts-langchain">Copy</button>
+          <pre id="ts-langchain">import { createVelaToolkit } from "vela-sdk/adapters/langchain";
+
+const { tools, vela } = createVelaToolkit({ workflows: [myWorkflowYaml] });
+const agent = createReactAgent({ llm, tools });</pre>
+        </div>
+        <div class="code-block" data-lang="typescript">
+          <button class="copy-btn" data-copy="ts-azure">Copy</button>
+          <pre id="ts-azure">import { createVelaAzureToolset } from "vela-sdk/adapters/azure-agents";
+
+const { tools, handleToolCall, promptAdvisor } =
+  createVelaAzureToolset({ workflows: [myWorkflowYaml] });
+// pass `tools` as the agent's function tool defs
+// dispatch calls via handleToolCall(name, args)
+// inject `promptAdvisor` into the agent's system instructions</pre>
+        </div>
+      </section>
+
+      <section id="ts-delegate">
+        <h3>Delegate Steps <span style="font-size: var(--text-sm); color: var(--text-gold); font-weight: 500;">— TypeScript only, new</span></h3>
+        <p>A <code>delegate</code> step forwards execution to an app-registered handler, resolved <strong>synchronously and in-process</strong> — no agent round-trip, unlike every other step type. Register a handler once at startup:</p>
+        <div class="code-block" data-lang="typescript">
+          <button class="copy-btn" data-copy="ts-delegate-register">Copy</button>
+          <pre id="ts-delegate-register">import { registerDelegate } from "vela-sdk";
+
+registerDelegate("shell", async (step, ctx) => {
+  const task = ctx.resolveVars(step.task); // resolves {{...}} templates deep in the object
+  const result = await runShellCommand(task.command);
+  ctx.setCapture("exit_code", result.code);
+  return { output: result.stdout };
+});</pre>
+        </div>
+        <p>Referenced from YAML by name:</p>
+        <div class="code-block" data-lang="yaml">
+          <button class="copy-btn" data-copy="ts-delegate-yaml">Copy</button>
+          <pre id="ts-delegate-yaml">- id: run-shell
+  type: delegate
+  delegate: shell
+  task:
+    command: "echo {{params.name}}"
+  capture:
+    - key: exit_code
+      source: output</pre>
+        </div>
+        <p>The handler signature: <code>(step: { id, delegate, task }, ctx: DelegateContext) =&gt; Promise&lt;unknown&gt;</code>, where <code>DelegateContext</code> gives you <code>resolveVars</code>, <code>setCapture</code>, an <code>AbortSignal</code>, and a no-op-by-default <code>log</code>. <code>registerDelegate(name, handler)</code> throws if the name is already taken; <code>resolveDelegate(name)</code> and <code>clearDelegates()</code> (test-only) round out the registry API. A non-object handler return is wrapped as <code>{ result: value }</code>; values written via <code>ctx.setCapture</code> win over same-key values from the return object.</p>
+        <div class="callout callout--gold">
+          <strong>Don't confuse this with the <code>execute</code> step's <code>delegate</code> field.</strong> <code>execute</code> steps have long supported an optional <code>delegate</code>/<code>instructions</code> pair that's just a string label surfaced to the <em>caller</em> via the advance response (<code>AdvanceResult.delegate</code>) — it tells the calling agent "hand this off to a subagent named X", but nothing in the SDK resolves or invokes it. The <code>delegate</code> <strong>step type</strong> described here is fully resolved and executed by the SDK itself via the registry. Same word, two unrelated mechanisms.
+        </div>
+      </section>
+
+      <section id="ts-locale">
+        <h3>Locale &amp; Tool Names</h3>
+        <div class="code-block" data-lang="typescript">
+          <button class="copy-btn" data-copy="ts-locale-code">Copy</button>
+          <pre id="ts-locale-code">import { getLocale } from "vela-sdk";
+
+const vela = new VelaWorkflows({
+  server: adapter,
+  workflows: [yaml],
+  locale: getLocale("de"),
+});</pre>
+        </div>
+        <p>Same <code>toolPrefix</code> / <code>toolNameFormat</code> mechanism as the Python SDK (keys <code>advance</code>/<code>status</code>/<code>list</code>).</p>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <section id="known-limitations">
+        <h2>Known Limitations</h2>
+        <p>Documented honestly rather than silently — these are things the schema or old docs suggest work today but don't yet, in either SDK unless noted.</p>
+        <ul class="limitations-list">
+          <li>
+            <span class="tag">Both SDKs</span>
+            <code>mcp_call</code> step type is schema-only. Neither engine has a code path that actually invokes an MCP tool for it — it's parsed into the model and then behaves like a generic sequential step. The calling agent must invoke the tool itself and report back via the step output.
+          </li>
+          <li>
+            <span class="tag">Both SDKs</span>
+            <code>{{fetch.x}}</code>, <code>{{resolved.x}}</code>, and <code>{{project.x}}</code> template variables are named in the YAML schema's comments but never populated by either template-context builder. Only <code>params</code>, <code>steps</code>, and <code>state</code> resolve. The <code>fetch</code> step field is likewise parsed but never read by the engine.
+          </li>
+          <li>
+            <span class="tag">Both SDKs</span>
+            <code>on_error</code> (<code>retry</code>/<code>fallback</code>/<code>abort</code>) is computed by a helper the engine exposes, but neither engine calls it automatically on failure — your own calling code has to invoke it and act on the result.
+          </li>
+          <li>
+            <span class="tag">Python SDK</span>
+            <code>locale=</code> only covers the FastMCP integration layer's own strings (elicitation prompts, <code>next_action</code> text). The workflow engine's own step-prompt assembly and dialog-phase headers are currently hardcoded German regardless of locale — an English locale still shows a German prompt body.
+          </li>
+          <li>
+            <span class="tag">Both SDKs</span>
+            <code>auto_archive_after</code> and <code>allow_pause</code> exist on the lifecycle schema but have no enforcement logic in either engine today — only <code>auto_cancel_after</code> is actually implemented.
+          </li>
+        </ul>
+      </section>
+
+      <footer class="page-footer">
+        &copy; 2026 Vela. <a href="https://github.com/LeonNonnast/vela">GitHub</a>
+      </footer>
+
+    </main>
+  </div>
+
+  <script>
+    /* Mobile sidebar toggle */
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('menu-overlay');
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('visible');
+    });
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('visible');
+    });
+
+    /* Active sidebar link on scroll */
+    const sections = document.querySelectorAll('section[id]');
+    const sidebarLinks = document.querySelectorAll('.sidebar-link[href^="#"]');
+    function updateActiveLink() {
+      let current = '';
+      sections.forEach(section => {
+        const top = section.offsetTop - 100;
+        if (window.scrollY >= top) current = section.getAttribute('id');
+      });
+      sidebarLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+      });
+    }
+    window.addEventListener('scroll', updateActiveLink, { passive: true });
+    updateActiveLink();
+
+    sidebarLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 900) {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('visible');
+        }
+      });
+    });
+
+    /* Doc tabs (unused today, kept for future side-by-side snippets) */
+    document.querySelectorAll('.doc-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const group = tab.closest('.doc-tabs').parentElement;
+        group.querySelectorAll('.doc-tab').forEach(t => t.classList.remove('active'));
+        group.querySelectorAll('.doc-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        group.querySelector(`.doc-panel[data-panel="${tab.dataset.tab}"]`).classList.add('active');
+      });
+    });
+
+    /* Copy buttons */
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const target = document.getElementById(btn.dataset.copy);
+        try {
+          await navigator.clipboard.writeText(target.textContent);
+          btn.textContent = 'Copied';
+          btn.classList.add('copied');
+          setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+        } catch (e) { /* clipboard unavailable — no-op */ }
+      });
+    });
+  </script>
+</body>
+</html>
