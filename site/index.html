@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vela — Stateful workflows for MCP servers</title>
+  <meta name="description" content="Vela is an open-source SDK that gives any MCP server pausable, resumable, stateful workflows defined as YAML. Python and TypeScript.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="assets/vela-design-system.css">
+  <script src="assets/vela-theme.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* --- Nav --- */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--space-4) var(--space-8);
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-subtle);
+      backdrop-filter: blur(12px);
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: 700;
+      background: var(--gradient-heading);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-decoration: none;
+    }
+    .nav-actions { display: flex; align-items: center; gap: var(--space-3); }
+    .nav-btn {
+      background: none; border: 1px solid var(--border-subtle);
+      color: var(--text-secondary); border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3); cursor: pointer;
+      font-size: var(--text-sm); font-family: var(--font-body);
+      transition: var(--transition-fast);
+    }
+    .nav-btn:hover { border-color: var(--border-hover); color: var(--text-primary); }
+    .nav-link {
+      background: var(--bg-accent); border: 1px solid var(--border-accent);
+      color: var(--text-accent); border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-4); cursor: pointer;
+      font-size: var(--text-sm); font-family: var(--font-body);
+      text-decoration: none; transition: var(--transition-fast);
+    }
+    .nav-link:hover { background: var(--bg-accent-hover); border-color: var(--border-accent-hover); }
+    .nav-link--ghost {
+      background: none; border-color: var(--border-subtle); color: var(--text-secondary);
+    }
+    .nav-link--ghost:hover { border-color: var(--border-hover); color: var(--text-primary); background: none; }
+
+    /* --- Hero --- */
+    .hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      padding: var(--space-24) var(--space-6) var(--space-16);
+    }
+    .hero-sail { margin-bottom: var(--space-8); }
+    .hero-sail svg {
+      width: 120px; height: 140px;
+      animation: sailSway 6s ease-in-out infinite;
+    }
+    @keyframes sailSway {
+      0%, 100% { transform: rotate(-2deg) scale(1); }
+      50% { transform: rotate(2deg) scale(1.03); }
+    }
+    .hero-wordmark {
+      font-family: var(--font-display);
+      font-size: var(--text-hero);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      background: var(--gradient-heading);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: var(--space-4);
+    }
+    .hero-tagline {
+      font-size: var(--text-xl);
+      color: var(--text-secondary);
+      margin-bottom: var(--space-8);
+      max-width: 520px;
+    }
+    .hero-ctas { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; justify-content: center; }
+    .hero-cta {
+      display: inline-block;
+      background: var(--bg-accent); border: 1px solid var(--border-accent);
+      color: var(--text-accent); border-radius: var(--radius-pill);
+      padding: var(--space-3) var(--space-8);
+      font-size: var(--text-md); font-family: var(--font-body);
+      text-decoration: none; cursor: pointer;
+      transition: var(--transition-base);
+      box-shadow: var(--shadow-blue-sm);
+    }
+    .hero-cta:hover {
+      background: var(--bg-accent-hover); border-color: var(--border-accent-hover);
+      box-shadow: var(--shadow-blue-md);
+    }
+    .hero-cta--secondary {
+      background: none; box-shadow: none; color: var(--text-secondary); border-color: var(--border-subtle);
+    }
+    .hero-cta--secondary:hover { color: var(--text-primary); border-color: var(--border-hover); background: none; }
+    .hero-badge {
+      display: inline-block; margin-top: var(--space-6);
+      font-size: var(--text-xs); color: var(--text-gold);
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-pill);
+      padding: var(--space-1) var(--space-3);
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+
+    /* --- Pitch --- */
+    .pitch {
+      max-width: 680px; margin: 0 auto;
+      padding: var(--space-16) var(--space-6);
+      text-align: center;
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .pitch.visible { opacity: 1; transform: translateY(0); }
+    .pitch p {
+      font-size: var(--text-lg);
+      color: var(--text-secondary);
+      margin-bottom: var(--space-4);
+      line-height: 1.7;
+    }
+
+    /* --- Divider --- */
+    .divider {
+      height: 2px; max-width: 600px; margin: 0 auto;
+      background: var(--gradient-line); border-radius: var(--radius-full);
+      opacity: 0.5;
+    }
+
+    /* --- Demo / Install --- */
+    .demo {
+      max-width: 760px; margin: 0 auto;
+      padding: var(--space-16) var(--space-6);
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .demo.visible { opacity: 1; transform: translateY(0); }
+    .demo-heading {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: 600;
+      color: var(--text-heading);
+      text-align: center;
+      margin-bottom: var(--space-8);
+    }
+    .demo-tabs {
+      display: flex; justify-content: center; gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+    .demo-tab {
+      background: none; border: 1px solid var(--border-subtle);
+      color: var(--text-muted); border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-5); cursor: pointer;
+      font-size: var(--text-sm); font-family: var(--font-mono);
+      transition: var(--transition-fast);
+    }
+    .demo-tab:hover { color: var(--text-secondary); border-color: var(--border-hover); }
+    .demo-tab.active {
+      color: var(--text-accent); border-color: var(--border-accent); background: var(--bg-accent);
+    }
+    .demo-panel { display: none; }
+    .demo-panel.active { display: block; }
+    .code-block {
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      margin-bottom: var(--space-4);
+      overflow-x: auto;
+    }
+    .code-block pre {
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      white-space: pre;
+    }
+    .code-block .kw { color: var(--text-accent); }
+    .code-block .str { color: var(--text-gold); }
+    .code-block .cmt { color: var(--text-muted); }
+    .copy-btn {
+      position: absolute; top: var(--space-3); right: var(--space-3);
+      background: var(--bg-surface); border: 1px solid var(--border-subtle);
+      color: var(--text-muted); border-radius: var(--radius-sm);
+      padding: var(--space-1) var(--space-3); cursor: pointer;
+      font-size: var(--text-xs); font-family: var(--font-body);
+      transition: var(--transition-fast);
+    }
+    .copy-btn:hover { color: var(--text-primary); border-color: var(--border-hover); }
+    .copy-btn.copied { color: var(--text-success); border-color: var(--text-success); }
+    .demo-caption {
+      font-size: var(--text-sm); color: var(--text-muted);
+      text-align: center; margin: var(--space-8) 0 var(--space-3);
+    }
+
+    /* --- Features --- */
+    .features {
+      max-width: 960px; margin: 0 auto;
+      padding: var(--space-16) var(--space-6);
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-6);
+    }
+    @media (max-width: 640px) {
+      .features { grid-template-columns: 1fr; }
+    }
+    .feature-card {
+      border-radius: var(--radius-lg);
+      padding: var(--space-8);
+      border: 1px solid var(--border-subtle);
+      transition: var(--transition-base);
+      opacity: 0; transform: translateY(20px);
+    }
+    .feature-card.visible { opacity: 1; transform: translateY(0); }
+    .feature-card:hover { border-color: var(--border-hover); }
+    .feature-card:nth-child(1) { background: var(--pastel-pink-bg); border-color: var(--pastel-pink-border); }
+    .feature-card:nth-child(2) { background: var(--pastel-green-bg); border-color: var(--pastel-green-border); }
+    .feature-card:nth-child(3) { background: var(--pastel-yellow-bg); border-color: var(--pastel-yellow-border); }
+    .feature-card:nth-child(4) { background: var(--pastel-blue-bg); border-color: var(--pastel-blue-border); }
+    .feature-icon {
+      width: 48px; height: 48px; margin-bottom: var(--space-4);
+    }
+    .feature-card:nth-child(1) .feature-icon { color: var(--pastel-pink-icon); }
+    .feature-card:nth-child(2) .feature-icon { color: var(--pastel-green-icon); }
+    .feature-card:nth-child(3) .feature-icon { color: var(--pastel-yellow-icon); }
+    .feature-card:nth-child(4) .feature-icon { color: var(--pastel-blue-icon); }
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      font-weight: 600;
+      color: var(--text-heading);
+      margin-bottom: var(--space-2);
+    }
+    .feature-desc {
+      font-size: var(--text-md);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* --- Examples --- */
+    .examples {
+      max-width: 760px; margin: 0 auto;
+      padding: var(--space-16) var(--space-6);
+      opacity: 0; transform: translateY(20px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .examples.visible { opacity: 1; transform: translateY(0); }
+    .examples-heading {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: 600;
+      color: var(--text-heading);
+      text-align: center;
+      margin-bottom: var(--space-8);
+    }
+    .examples-table {
+      width: 100%; border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    .examples-table th {
+      text-align: left; color: var(--text-muted); font-weight: 500;
+      padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
+    }
+    .examples-table td {
+      padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary); white-space: nowrap;
+    }
+    .examples-table a { color: var(--text-accent); text-decoration: none; font-family: var(--font-mono); }
+    .examples-table a:hover { text-decoration: underline; }
+    .examples-table-wrap { overflow-x: auto; }
+
+    /* --- Footer --- */
+    .footer {
+      text-align: center; padding: var(--space-12) var(--space-6);
+      color: var(--text-muted); font-size: var(--text-sm);
+      border-top: 1px solid var(--border-subtle);
+    }
+    .footer a { color: var(--text-secondary); text-decoration: none; margin: 0 var(--space-2); }
+    .footer a:hover { color: var(--text-primary); }
+
+    /* --- Reduced motion --- */
+    @media (prefers-reduced-motion: reduce) {
+      .hero-sail svg { animation: none; }
+      .pitch, .demo, .feature-card, .examples { opacity: 1; transform: none; transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <a href="/" class="nav-logo">VELA</a>
+    <div class="nav-actions">
+      <button class="nav-btn" id="lang-toggle">DE</button>
+      <a href="https://github.com/LeonNonnast/vela/blob/main/docs/architecture.md" class="nav-link nav-link--ghost" data-i18n="nav_docs">Docs</a>
+      <a href="https://github.com/LeonNonnast/vela" class="nav-link" data-i18n="nav_github">GitHub</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-sail">
+      <svg viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sailGrad" x1="20" y1="0" x2="100" y2="140" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="var(--accent-blue)"/>
+            <stop offset="100%" stop-color="var(--accent-gold)"/>
+          </linearGradient>
+          <linearGradient id="sailGrad2" x1="60" y1="10" x2="60" y2="130" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="var(--accent-blue)" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="var(--accent-gold)" stop-opacity="0.1"/>
+          </linearGradient>
+        </defs>
+        <path d="M55 130 L55 15 Q75 30 95 70 Q85 110 55 130Z" fill="url(#sailGrad)" opacity="0.85"/>
+        <path d="M50 130 L50 25 Q30 50 25 85 Q30 115 50 130Z" fill="url(#sailGrad2)" opacity="0.6"/>
+        <line x1="55" y1="10" x2="55" y2="135" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.4"/>
+        <ellipse cx="55" cy="135" rx="22" ry="3" fill="var(--text-muted)" opacity="0.15"/>
+      </svg>
+    </div>
+    <h1 class="hero-wordmark">VELA</h1>
+    <p class="hero-tagline" data-i18n="tagline">Stateful workflows for MCP servers</p>
+    <div class="hero-ctas">
+      <a href="https://github.com/LeonNonnast/vela" class="hero-cta" data-i18n="cta_primary">View on GitHub</a>
+      <a href="https://github.com/LeonNonnast/vela/blob/main/docs/architecture.md" class="hero-cta hero-cta--secondary" data-i18n="cta_secondary">Read the docs</a>
+    </div>
+    <span class="hero-badge" data-i18n="badge">Open Source · MIT</span>
+  </section>
+
+  <!-- Pitch -->
+  <section class="pitch" data-reveal>
+    <p data-i18n="desc">MCP servers have tools. But tools without process are just a bag of functions — the AI has to guess what comes next, state gets lost between sessions, and multi-step tasks fall apart. Vela gives any MCP server pausable, resumable, stateful workflows, defined as YAML.</p>
+  </section>
+
+  <!-- Divider -->
+  <div class="divider"></div>
+
+  <!-- Install / Demo -->
+  <section class="demo" data-reveal>
+    <h2 class="demo-heading" data-i18n="demo_heading">Three lines. Any MCP server.</h2>
+
+    <div class="demo-tabs">
+      <button class="demo-tab active" data-tab="pip">pip</button>
+      <button class="demo-tab" data-tab="npm">npm</button>
+    </div>
+
+    <div class="demo-panel active" data-panel="pip">
+      <div class="code-block">
+        <button class="copy-btn" data-copy="pip-install">Copy</button>
+        <pre id="pip-install">pip install vela-sdk[fastmcp]</pre>
+      </div>
+      <div class="code-block">
+        <button class="copy-btn" data-copy="pip-code">Copy</button>
+        <pre id="pip-code"><span class="kw">from</span> fastmcp <span class="kw">import</span> FastMCP
+<span class="kw">from</span> vela_sdk <span class="kw">import</span> VelaWorkflows
+
+mcp = FastMCP(<span class="str">"cooking-assistant"</span>)
+workflows = VelaWorkflows(mcp, workflows_dir=<span class="str">"./workflows/"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="demo-panel" data-panel="npm">
+      <div class="code-block">
+        <button class="copy-btn" data-copy="npm-install">Copy</button>
+        <pre id="npm-install">npm install vela-sdk</pre>
+      </div>
+      <div class="code-block">
+        <button class="copy-btn" data-copy="npm-code">Copy</button>
+        <pre id="npm-code"><span class="kw">import</span> { FastMCP } <span class="kw">from</span> <span class="str">"fastmcp"</span>;
+<span class="kw">import</span> { VelaWorkflows } <span class="kw">from</span> <span class="str">"vela-sdk"</span>;
+<span class="kw">import</span> { FastMcpAdapter } <span class="kw">from</span> <span class="str">"vela-sdk/adapters/fastmcp"</span>;
+
+<span class="kw">const</span> server = <span class="kw">new</span> FastMCP({ name: <span class="str">"my-server"</span>, version: <span class="str">"1.0.0"</span> });
+<span class="kw">const</span> vela = <span class="kw">new</span> VelaWorkflows({
+  server: <span class="kw">new</span> FastMcpAdapter(server),
+  workflows: [myWorkflowYaml],
+});</pre>
+      </div>
+    </div>
+
+    <p class="demo-caption" data-i18n="demo_caption">Define your process as YAML — 7 step types, branching, pause/resume across sessions.</p>
+
+    <div class="code-block">
+      <button class="copy-btn" data-copy="yaml-code">Copy</button>
+      <pre id="yaml-code"><span class="cmt">id: cook-recipe</span>
+<span class="cmt">name: Cook a Recipe</span>
+steps:
+  - id: choose
+    type: choice
+    prompt: <span class="str">"What do you want to cook?"</span>
+    options:
+      - key: pasta
+        label: Pasta Carbonara
+      - key: curry
+        label: Thai Green Curry
+  - id: ingredients
+    type: confirm
+    prompt: <span class="str">"Check these ingredients: {{state.recipe_ingredients}}"</span>
+  - id: cooking
+    type: execute
+    prompt: <span class="str">"Follow the recipe step by step."</span></pre>
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="divider"></div>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="feature-card" data-reveal>
+      <svg class="feature-icon" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="16" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+        <circle cx="24" cy="24" r="10" stroke="currentColor" stroke-width="2" opacity="0.6"/>
+        <circle cx="24" cy="24" r="4" fill="currentColor" opacity="0.8"/>
+      </svg>
+      <h3 class="feature-title" data-i18n="feature1_title">Stateful & Resumable</h3>
+      <p class="feature-desc" data-i18n="feature1_desc">Pause a workflow, come back tomorrow, resume exactly where it left off — identity-based state, not just chat history.</p>
+    </div>
+    <div class="feature-card" data-reveal>
+      <svg class="feature-icon" viewBox="0 0 48 48" fill="none">
+        <circle cx="12" cy="24" r="3" fill="currentColor" opacity="0.6"/>
+        <circle cx="36" cy="14" r="3" fill="currentColor" opacity="0.6"/>
+        <circle cx="36" cy="34" r="3" fill="currentColor" opacity="0.6"/>
+        <path d="M15 24 L33 14 M15 24 L33 34" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+        <circle cx="24" cy="24" r="2" fill="currentColor" opacity="0.3"/>
+      </svg>
+      <h3 class="feature-title" data-i18n="feature2_title">Framework-Agnostic</h3>
+      <p class="feature-desc" data-i18n="feature2_desc">Adapters for FastMCP, the official @modelcontextprotocol/sdk, and LangChain — bring your own server.</p>
+    </div>
+    <div class="feature-card" data-reveal>
+      <svg class="feature-icon" viewBox="0 0 48 48" fill="none">
+        <rect x="10" y="10" width="28" height="10" rx="2" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+        <rect x="10" y="24" width="28" height="10" rx="2" stroke="currentColor" stroke-width="2" opacity="0.35"/>
+        <path d="M14 20 L14 24 M20 20 L20 24" stroke="currentColor" stroke-width="2" opacity="0.6"/>
+      </svg>
+      <h3 class="feature-title" data-i18n="feature3_title">Processes as YAML</h3>
+      <p class="feature-desc" data-i18n="feature3_desc">7 step types — freeform, choice, confirm, execute, dialog, workflow, mcp_call — with templating and branching.</p>
+    </div>
+    <div class="feature-card" data-reveal>
+      <svg class="feature-icon" viewBox="0 0 48 48" fill="none">
+        <rect x="8" y="18" width="12" height="12" rx="3" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+        <rect x="28" y="18" width="12" height="12" rx="3" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+        <path d="M20 24 L28 24" stroke="currentColor" stroke-width="2" opacity="0.6"/>
+        <circle cx="24" cy="24" r="2" fill="currentColor" opacity="0.4"/>
+      </svg>
+      <h3 class="feature-title" data-i18n="feature4_title">One Engine, Two SDKs</h3>
+      <p class="feature-desc" data-i18n="feature4_desc">Python and TypeScript share the same state-machine architecture — pick whichever your server runs on.</p>
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="divider"></div>
+
+  <!-- Examples -->
+  <section class="examples" data-reveal>
+    <h2 class="examples-heading" data-i18n="examples_heading">Examples</h2>
+    <div class="examples-table-wrap">
+    <table class="examples-table">
+      <thead>
+        <tr>
+          <th data-i18n="examples_th_example">Example</th>
+          <th data-i18n="examples_th_framework">Framework</th>
+          <th data-i18n="examples_th_language">Language</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a href="https://github.com/LeonNonnast/vela/tree/main/examples/python/mcp-fastmcp">mcp-fastmcp</a></td>
+          <td>FastMCP</td>
+          <td>Python</td>
+        </tr>
+        <tr>
+          <td><a href="https://github.com/LeonNonnast/vela/tree/main/examples/python/langchain">langchain</a></td>
+          <td>LangChain</td>
+          <td>Python</td>
+        </tr>
+        <tr>
+          <td><a href="https://github.com/LeonNonnast/vela/tree/main/examples/ts/mcp-fastmcp">mcp-fastmcp</a></td>
+          <td>FastMCP</td>
+          <td>TypeScript</td>
+        </tr>
+        <tr>
+          <td><a href="https://github.com/LeonNonnast/vela/tree/main/examples/ts/mcp-sdk">mcp-sdk</a></td>
+          <td>@modelcontextprotocol/sdk</td>
+          <td>TypeScript</td>
+        </tr>
+        <tr>
+          <td><a href="https://github.com/LeonNonnast/vela/tree/main/examples/ts/langchain">langchain</a></td>
+          <td>LangChain</td>
+          <td>TypeScript</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div>
+      <a href="https://github.com/LeonNonnast/vela">GitHub</a>
+      <a href="https://github.com/LeonNonnast/vela/blob/main/LICENSE">MIT License</a>
+    </div>
+    <div style="margin-top: var(--space-3)">&copy; 2026 Vela.</div>
+  </footer>
+
+  <script>
+    /* ── i18n ── */
+    const translations = {
+      en: {
+        nav_docs: "Docs",
+        nav_github: "GitHub",
+        tagline: "Stateful workflows for MCP servers",
+        cta_primary: "View on GitHub",
+        cta_secondary: "Read the docs",
+        badge: "Open Source · MIT",
+        desc: "MCP servers have tools. But tools without process are just a bag of functions — the AI has to guess what comes next, state gets lost between sessions, and multi-step tasks fall apart. Vela gives any MCP server pausable, resumable, stateful workflows, defined as YAML.",
+        demo_heading: "Three lines. Any MCP server.",
+        demo_caption: "Define your process as YAML — 7 step types, branching, pause/resume across sessions.",
+        feature1_title: "Stateful & Resumable",
+        feature1_desc: "Pause a workflow, come back tomorrow, resume exactly where it left off — identity-based state, not just chat history.",
+        feature2_title: "Framework-Agnostic",
+        feature2_desc: "Adapters for FastMCP, the official @modelcontextprotocol/sdk, and LangChain — bring your own server.",
+        feature3_title: "Processes as YAML",
+        feature3_desc: "7 step types — freeform, choice, confirm, execute, dialog, workflow, mcp_call — with templating and branching.",
+        feature4_title: "One Engine, Two SDKs",
+        feature4_desc: "Python and TypeScript share the same state-machine architecture — pick whichever your server runs on.",
+        examples_heading: "Examples",
+        examples_th_example: "Example",
+        examples_th_framework: "Framework",
+        examples_th_language: "Language"
+      },
+      de: {
+        nav_docs: "Doku",
+        nav_github: "GitHub",
+        tagline: "Zustandsbehaftete Workflows für MCP-Server",
+        cta_primary: "Auf GitHub ansehen",
+        cta_secondary: "Doku lesen",
+        badge: "Open Source · MIT",
+        desc: "MCP-Server haben Tools. Aber Tools ohne Prozess sind nur ein Sack Funktionen — die KI muss raten, was als Nächstes kommt, State geht zwischen Sessions verloren, und Multi-Step-Tasks zerfallen. Vela gibt jedem MCP-Server pausierbare, resumbare, zustandsbehaftete Workflows, definiert als YAML.",
+        demo_heading: "Drei Zeilen. Jeder MCP-Server.",
+        demo_caption: "Definiere deinen Prozess als YAML — 7 Step-Typen, Branching, Pause/Resume über Sessions hinweg.",
+        feature1_title: "Zustandsbehaftet & Resumbar",
+        feature1_desc: "Workflow pausieren, morgen zurückkommen, genau dort weitermachen — identitätsbasierter State, nicht nur Chat-Verlauf.",
+        feature2_title: "Framework-agnostisch",
+        feature2_desc: "Adapter für FastMCP, das offizielle @modelcontextprotocol/sdk und LangChain — bring deinen eigenen Server mit.",
+        feature3_title: "Prozesse als YAML",
+        feature3_desc: "7 Step-Typen — freeform, choice, confirm, execute, dialog, workflow, mcp_call — mit Templating und Branching.",
+        feature4_title: "Eine Engine, zwei SDKs",
+        feature4_desc: "Python und TypeScript teilen sich dieselbe State-Machine-Architektur — nimm, worauf dein Server läuft.",
+        examples_heading: "Beispiele",
+        examples_th_example: "Beispiel",
+        examples_th_framework: "Framework",
+        examples_th_language: "Sprache"
+      }
+    };
+
+    let currentLang = localStorage.getItem('vela_lang') || 'en';
+
+    function applyLang(lang) {
+      currentLang = lang;
+      localStorage.setItem('vela_lang', lang);
+      const t = translations[lang];
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key]) el.textContent = t[key];
+      });
+      document.getElementById('lang-toggle').textContent = lang === 'en' ? 'DE' : 'EN';
+      document.documentElement.lang = lang;
+    }
+
+    document.getElementById('lang-toggle').addEventListener('click', () => {
+      applyLang(currentLang === 'en' ? 'de' : 'en');
+    });
+
+    /* ── Scroll Reveal ── */
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('[data-reveal]').forEach(el => revealObserver.observe(el));
+
+    /* ── Demo Tabs ── */
+    document.querySelectorAll('.demo-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelector(`.demo-panel[data-panel="${tab.dataset.tab}"]`).classList.add('active');
+      });
+    });
+
+    /* ── Copy Buttons ── */
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const target = document.getElementById(btn.dataset.copy);
+        const text = target.textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = 'Copied';
+          btn.classList.add('copied');
+          setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+        } catch (e) {
+          /* clipboard unavailable (e.g. insecure context) — no-op */
+        }
+      });
+    });
+
+    /* ── Init ── */
+    applyLang(currentLang);
+  </script>
+</body>
+</html>

@@ -1,0 +1,619 @@
+/* ===================================================================
+   VELA DESIGN SYSTEM
+   Shared tokens, components, and theme logic for all Vela pages.
+   Dark mode only.
+   =================================================================== */
+
+/* System font stacks -- no external CDN dependencies */
+
+/* -- Reset ---------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* -- Color Tokens (Dark) -------------------------------------------- */
+:root {
+  --bg-primary: #04050a;
+  --bg-secondary: #0a0d18;
+  --bg-surface: rgba(107,150,255,0.03);
+  --bg-surface-hover: rgba(107,150,255,0.06);
+  --bg-card: rgba(107,150,255,0.02);
+  --bg-card-hover: rgba(107,150,255,0.05);
+  --bg-overlay: rgba(4,5,10,0.85);
+  --bg-accent: rgba(61,106,255,0.1);
+  --bg-accent-hover: rgba(61,106,255,0.2);
+
+  --text-primary: #e8efff;
+  --text-secondary: #bdd0e8;
+  --text-muted: #8ea4c4;
+  --text-accent: #a8c4ff;
+  --text-heading: #b8d0ff;
+  --text-bright: #e8efff;
+  --text-gold: #c8a96e;
+  --text-gold-bright: #e8cfa0;
+  --text-success: #4ade80;
+  --text-error: #ff8888;
+  --text-error-accent: #ff6b6b;
+
+  --accent-blue: #6b96ff;
+  --accent-blue-dark: #3d6aff;
+  --accent-blue-soft: rgba(107,150,255,0.1);
+  --accent-gold: #c8a96e;
+  --accent-gold-soft: rgba(200,169,110,0.08);
+  --accent-green: #4ade80;
+  --accent-red: #ff6b6b;
+  --accent-red-soft: rgba(255,107,107,0.08);
+
+  --border-subtle: rgba(107,150,255,0.12);
+  --border-light: rgba(107,150,255,0.1);
+  --border-medium: rgba(107,150,255,0.25);
+  --border-strong: rgba(107,150,255,0.25);
+  --border-hover: rgba(107,150,255,0.35);
+  --border-accent: rgba(61,106,255,0.3);
+  --border-accent-hover: rgba(61,106,255,0.5);
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.5);
+  --shadow-blue-sm: 0 0 8px rgba(61,106,255,0.3);
+  --shadow-blue-md: 0 0 28px rgba(61,106,255,0.22);
+  --shadow-gold-sm: 0 0 10px #c8a96e;
+  --shadow-gold-md: 0 0 10px #c8a96e, 0 0 20px rgba(200,169,110,0.4);
+
+  --gradient-heading: linear-gradient(135deg, #e8efff 0%, #6b96ff 50%, #c8a96e 100%);
+  --gradient-blue: linear-gradient(135deg, #e8efff 0%, #6b96ff 100%);
+  --gradient-line: linear-gradient(90deg, transparent, #3d6aff 30%, #c8a96e 70%, transparent);
+
+  /* Subtle glow card backgrounds (dark mode) */
+  --pastel-pink: rgba(255,150,150,0.04);
+  --pastel-green: rgba(150,255,180,0.04);
+  --pastel-yellow: rgba(255,220,150,0.04);
+  --pastel-blue: rgba(150,180,255,0.04);
+  --pastel-pink-bg: rgba(255,182,193,0.06);
+  --pastel-pink-border: rgba(255,182,193,0.15);
+  --pastel-pink-icon: #ffb6c1;
+  --pastel-green-bg: rgba(144,238,144,0.06);
+  --pastel-green-border: rgba(144,238,144,0.15);
+  --pastel-green-icon: #90ee90;
+  --pastel-yellow-bg: rgba(255,223,128,0.06);
+  --pastel-yellow-border: rgba(255,223,128,0.15);
+  --pastel-yellow-icon: #ffdf80;
+  --pastel-blue-bg: rgba(135,206,250,0.06);
+  --pastel-blue-border: rgba(135,206,250,0.15);
+  --pastel-blue-icon: #87cefa;
+
+  /* Typography */
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 2.75rem;
+  --text-5xl: 5rem;
+  --text-hero: 5.3rem;
+  --text-md: 0.875rem;
+
+  /* Font aliases */
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* Spacing (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-pill: 24px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-enter: 0.8s ease;
+}
+
+/* -- Base Styles ---------------------------------------------------- */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-weight: 300;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* -- Typography ----------------------------------------------------- */
+.vela-heading {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  background: var(--gradient-heading);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.vela-heading--xl { font-size: var(--text-5xl); }
+.vela-heading--lg { font-size: var(--text-4xl); }
+.vela-heading--md { font-size: var(--text-2xl); }
+.vela-heading--sm { font-size: var(--text-xl); }
+
+.vela-label {
+  font-family: var(--font-sans);
+  font-weight: 300;
+  font-size: var(--text-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* -- Buttons -------------------------------------------------------- */
+.vela-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-8);
+  font-family: var(--font-sans);
+  font-weight: 300;
+  font-size: var(--text-sm);
+  letter-spacing: 0.1em;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-decoration: none;
+  min-width: 120px;
+}
+
+.vela-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.vela-btn:active {
+  transform: scale(0.97);
+}
+
+.vela-btn--primary {
+  background: var(--accent-blue);
+  color: #fff;
+  border-color: var(--accent-blue);
+}
+.vela-btn--primary:hover {
+  box-shadow: 0 4px 20px rgba(61,106,255,0.3);
+}
+
+.vela-btn--secondary {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border-color: var(--border-medium);
+}
+.vela-btn--secondary:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.vela-btn--approve {
+  background: var(--accent-blue-soft);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+.vela-btn--approve:hover {
+  background: var(--accent-blue);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(61,106,255,0.25);
+}
+
+.vela-btn--danger {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+}
+.vela-btn--danger:hover {
+  background: var(--accent-red-soft);
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.vela-btn--ghost {
+  background: transparent;
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+  min-width: auto;
+}
+.vela-btn--ghost:hover {
+  border-color: var(--border-medium);
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+}
+
+/* -- Cards ---------------------------------------------------------- */
+.vela-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8) var(--space-6);
+  transition: all var(--transition-base);
+  text-align: center;
+}
+
+.vela-card:hover {
+  border-color: var(--border-medium);
+  background: var(--bg-surface-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.vela-card--pastel-pink { background: var(--pastel-pink); }
+.vela-card--pastel-green { background: var(--pastel-green); }
+.vela-card--pastel-yellow { background: var(--pastel-yellow); }
+.vela-card--pastel-blue { background: var(--pastel-blue); }
+
+.vela-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-4);
+}
+
+.vela-card__icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: var(--accent-blue);
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.vela-card__title {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--text-lg);
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.vela-card__desc {
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+/* -- Info Boxes ----------------------------------------------------- */
+.vela-info {
+  background: var(--accent-blue-soft);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+  text-align: left;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.vela-info p { margin-bottom: var(--space-2); }
+.vela-info p:last-child { margin-bottom: 0; }
+.vela-info strong { color: var(--accent-blue); font-weight: 400; }
+.vela-info a { color: var(--accent-blue); text-decoration: none; border-bottom: 1px solid var(--border-subtle); }
+.vela-info a:hover { border-color: var(--accent-blue); }
+
+.vela-info--error {
+  background: var(--accent-red-soft);
+  border-color: var(--accent-red);
+}
+.vela-info--error strong { color: var(--accent-red); }
+
+.vela-info--warning {
+  background: var(--accent-gold-soft);
+  border-color: var(--accent-gold);
+}
+.vela-info--warning strong { color: var(--accent-gold); }
+
+.vela-info--success {
+  background: rgba(34,165,90,0.06);
+  border-color: var(--accent-green);
+}
+
+.vela-info code {
+  background: var(--bg-surface-hover);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.9em;
+}
+
+.vela-info ul {
+  margin: var(--space-2) 0;
+  padding-left: var(--space-5);
+}
+.vela-info li { margin: var(--space-2) 0; }
+
+/* -- Container (for centered pages like OAuth) ---------------------- */
+.vela-container {
+  max-width: 36rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-8);
+}
+
+@media (max-width: 640px) {
+  .vela-container { padding: var(--space-8) var(--space-4); }
+}
+
+/* -- Redirect Section (OAuth) --------------------------------------- */
+.vela-redirect {
+  background: var(--accent-gold-soft);
+  border: 1px solid var(--accent-gold);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-6);
+  text-align: center;
+}
+
+.vela-redirect__label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+.vela-redirect__value {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  word-break: break-all;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* -- Details / Collapsible ------------------------------------------ */
+.vela-details {
+  margin-bottom: var(--space-6);
+  text-align: left;
+}
+
+.vela-details summary {
+  cursor: pointer;
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: var(--space-2) 0;
+  transition: color var(--transition-base);
+  list-style: none;
+}
+.vela-details summary::-webkit-details-marker { display: none; }
+.vela-details summary::before {
+  content: '\25B6';
+  display: inline-block;
+  margin-right: var(--space-2);
+  font-size: 0.625rem;
+  transition: transform 0.2s;
+}
+.vela-details[open] summary::before { transform: rotate(90deg); }
+.vela-details summary:hover { color: var(--accent-blue); }
+
+.vela-detail-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.vela-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--text-sm);
+}
+.vela-detail-row:last-child { border-bottom: none; }
+.vela-detail-label { color: var(--text-muted); }
+.vela-detail-value {
+  color: var(--text-secondary);
+  text-align: right;
+  word-break: break-all;
+  max-width: 60%;
+}
+
+/* -- Button Group --------------------------------------------------- */
+.vela-btn-group {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  justify-content: center;
+}
+
+/* -- Pill Nav ------------------------------------------------------- */
+.vela-pill-nav {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  background: var(--bg-overlay);
+}
+
+.vela-pill-nav__btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-weight: 300;
+  font-size: var(--text-xs);
+  letter-spacing: 0.15em;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+.vela-pill-nav__btn.active,
+.vela-pill-nav__btn:hover {
+  background: var(--accent-blue-soft);
+  color: var(--accent-blue);
+}
+
+/* -- Tooltip -------------------------------------------------------- */
+.vela-help {
+  text-align: center;
+  margin-top: var(--space-6);
+}
+
+.vela-help__trigger {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  cursor: help;
+  position: relative;
+  border-bottom: 1px dotted var(--border-medium);
+  padding-bottom: 2px;
+}
+
+.vela-help__content {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: -1rem;
+  width: 280px;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-align: left;
+  backdrop-filter: blur(16px);
+  z-index: 10;
+  box-shadow: var(--shadow-lg);
+}
+.vela-help__trigger:hover .vela-help__content { display: block; }
+.vela-help__content a { color: var(--accent-blue); text-decoration: underline; }
+
+/* Mobile: tooltip becomes expandable */
+@media (max-width: 640px) {
+  .vela-help__content {
+    position: static;
+    display: none;
+    width: 100%;
+    margin-top: var(--space-2);
+  }
+  .vela-help__trigger:focus .vela-help__content,
+  .vela-help__trigger:active .vela-help__content { display: block; }
+}
+
+/* -- Footer --------------------------------------------------------- */
+.vela-footer {
+  text-align: center;
+  padding: var(--space-10) var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-xs);
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+}
+
+/* -- Page Logo ------------------------------------------------------ */
+.vela-logo {
+  width: 56px;
+  height: auto;
+  margin: 0 auto var(--space-6);
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(61,106,255,0.2));
+}
+
+/* -- Illustrations (SVG) -------------------------------------------- */
+.vela-illustration {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--space-6);
+  display: block;
+}
+
+.vela-illustration svg {
+  width: 100%;
+  height: 100%;
+  stroke: var(--text-muted);
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* -- Animations ----------------------------------------------------- */
+.vela-fade-in {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: velaFadeIn 0.6s ease forwards;
+}
+
+@keyframes velaFadeIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.vela-fade-in--delay-1 { animation-delay: 0.1s; }
+.vela-fade-in--delay-2 { animation-delay: 0.2s; }
+.vela-fade-in--delay-3 { animation-delay: 0.3s; }
+
+/* Scroll reveal (applied via JS) */
+.vela-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.vela-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .vela-fade-in, .vela-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* -- Responsive ----------------------------------------------------- */
+@media (max-width: 768px) {
+  .vela-heading--xl { font-size: var(--text-4xl); }
+  .vela-heading--lg { font-size: var(--text-3xl); }
+}
+
+@media (max-width: 420px) {
+  .vela-heading--xl { font-size: var(--text-3xl); }
+  .vela-heading--lg { font-size: var(--text-2xl); }
+  .vela-btn { min-width: 100px; padding: var(--space-3) var(--space-6); }
+}
