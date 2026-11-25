@@ -1,43 +1,8 @@
 # vela-sdk
 
-TypeScript Workflow Engine for MCP Servers.
+TypeScript workflow engine for MCP servers.
 
-Add structured, multi-step workflows to any MCP server. Define workflows in YAML, vela-sdk registers the tools and prompts, drives the state machine, and handles elicitation dialogs automatically.
-
-## Quick Start
-
-```typescript
-import { FastMCP } from "fastmcp";
-import { VelaWorkflows } from "vela-sdk";
-import { FastMcpAdapter } from "vela-sdk/adapters/fastmcp";
-
-const server = new FastMCP({ name: "my-server", version: "1.0.0" });
-
-const workflows = new VelaWorkflows({
-  server: new FastMcpAdapter(server),
-  workflows: [myWorkflowYaml],   // YAML strings
-  agents: [myAgentYaml],         // optional
-});
-
-server.start({ transportType: "stdio" });
-```
-
-The constructor parses the YAML, registers MCP tools (`workflow_advance`, `workflow_status`, `workflow_list`) and prompts, and is ready to serve.
-
-## Features
-
-- **YAML-defined workflows** with typed steps: `execute`, `input`, `choice`, `confirm`, `dialog`, `workflow` (sub-workflows)
-- **Automatic state machine** -- advance, branch, loop, sub-workflow delegation, and completion
-- **MCP elicitation** -- collects required captures via native MCP elicitation dialogs (no manual prompting)
-- **Auto-advance loop** -- agent-driven steps execute without user intervention
-- **Agent personas** -- YAML-defined agents with persona, greeting, and workflow lists
-- **Sub-workflows** with automatic parameter mapping and parent resume
-- **Pluggable storage** -- in-memory (default), localStorage/KV, or bring your own `WorkflowStore`
-- **Pluggable engine** -- swap the `IWorkflowEngine` for custom state machine logic
-- **Extension protocols** -- `WorkflowResolver`, `SessionProvider`, `ParamFilter`, `ProjectResolver`
-- **Locale support** -- English and German built-in, extensible via the `Locale` interface
-- **Dual adapter system** -- `fastmcp` and `@modelcontextprotocol/sdk` supported out of the box
-- **Dual module format** -- ESM and CommonJS builds via tsup
+Add structured, multi-step workflows to any MCP server. Define workflows in YAML; vela-sdk registers the tools and prompts, drives the state machine, persists run state, and handles elicitation dialogs automatically.
 
 ## Installation
 
@@ -45,58 +10,134 @@ The constructor parses the YAML, registers MCP tools (`workflow_advance`, `workf
 npm install vela-sdk
 ```
 
-Plus one MCP framework (peer dependency, both optional):
+Plus the framework you integrate with (all optional peer dependencies):
 
 ```bash
-# Option A: FastMCP
-npm install fastmcp
-
-# Option B: Official MCP SDK
-npm install @modelcontextprotocol/sdk
+npm install @modelcontextprotocol/sdk   # official MCP SDK (full elicitation support)
+npm install fastmcp                     # FastMCP
+npm install @langchain/core             # LangChain.js
 ```
 
-## Usage
+Requires Node.js >= 20. Ships ESM and CommonJS builds with type definitions.
 
-### Workflow YAML Format
+## Quick Start
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { VelaWorkflows } from "vela-sdk";
+import { OfficialSdkAdapter } from "vela-sdk/adapters/mcp-sdk";
+
+const mcpServer = new McpServer(
+  { name: "my-server", version: "1.0.0" },
+  { capabilities: {} },
+);
+
+new VelaWorkflows({
+  server: new OfficialSdkAdapter(mcpServer),
+  workflows: [myWorkflowYaml], // YAML strings
+  agents: [myAgentYaml],       // optional
+});
+
+await mcpServer.connect(new StdioServerTransport());
+```
+
+The constructor parses the YAML and registers:
+
+| Tool | Purpose |
+|---|---|
+| `workflow_advance` | Start/resume a run (`workflow_id`, `params` as JSON string) or advance it (`run_id`, `output`, optional `notes`, `step_id`) |
+| `workflow_status` | Show the state of a run |
+| `workflow_list` | List available workflows and active runs |
+
+Plus one MCP prompt per workflow (`workflow_<id>`) and one per agent (`agent_<id>`). Every tool response contains a `next_action` telling the agent exactly what to do next.
+
+## Workflow YAML
 
 ```yaml
 id: onboarding
-version: "1"
+version: "1.0.0"
 name: Employee Onboarding
 description: Onboard a new team member
 params:
   - name: employee_name
-    type: string
-    required: true
-    identity: true
     label: Employee Name
+    required: true
+    identity: true          # same identity → resume the existing run
+lifecycle:
+  allow_pause: true
+  auto_cancel_after: "30d"
+  auto_archive_after: "90d"
 steps:
   - id: collect_info
-    type: input
+    type: freeform
     name: Collect Information
-    prompt: "Please provide the department and start date."
+    prompt: "Please provide the department and start date for {{params.employee_name}}."
     capture:
       - key: department
-        source: elicit
         label: Department
+        source: elicit
         required: true
       - key: start_date
-        source: elicit
         label: Start Date
+        source: elicit
         required: true
   - id: setup_accounts
     type: execute
     name: Set Up Accounts
-    prompt: "Create accounts for {{employee_name}} in {{department}}."
+    depends_on:
+      - step: collect_info
+        fields: [department]
+    prompt: "Create accounts for {{params.employee_name}} in {{state.department}}."
   - id: confirm_complete
     type: confirm
     name: Confirm Completion
-    prompt: "All accounts created for {{employee_name}}. Confirm onboarding is complete."
+    prompt: "All accounts created. Confirm onboarding is complete."
 ```
 
-Template variables use `{{param_name}}` syntax and resolve from workflow params and captured state data.
+### Step types
 
-### Agent Personas
+| Type | Purpose | Specific fields |
+|---|---|---|
+| `freeform` | Free-text answer | – |
+| `choice` | Pick one option, optionally branching | `options[]` (`key`, `label`, `description`, `next`) |
+| `confirm` | Yes/no confirmation | – |
+| `execute` | Agent performs a task | `instructions`, `delegate` |
+| `dialog` | Guided conversation in phases | `mode` (`brainstorming`, `requirements`, `planning`, `review`, `freeform`), `goal`, `guidelines`, `phases` |
+| `workflow` | Run a sub-workflow; parent resumes automatically when it completes | `workflow_ref`, `params_mapping` |
+| `mcp_call` | Server-side tool call via a registered source, auto-advances | `mcp_source`, `mcp_tool`, `mcp_params` |
+| `delegate` | Hand execution to a registered in-process handler, auto-advances | `delegate`, `task` |
+
+### Fields available on every step
+
+| Field | Purpose |
+|---|---|
+| `prompt` | Prompt text, supports templates |
+| `capture[]` | Values to store in run state: `key`, `label`, `type`, `required`, `source` (`output` or `elicit`), `elicit` (`if_missing`, `never`, …), `options`, `default`, `placeholder` |
+| `next` | Explicit next step id |
+| `depends_on[]` | Required fields from earlier steps (`step`, `fields`); the run is blocked until they exist |
+| `fetch[]` | Data loaded via a registered source before the step is shown (`key`, `source`, `action`, `params`) |
+| `tools[]` | External MCP tools the step needs |
+| `on_error` | `retry`, `fallback`, `abort`, `message` |
+| `resources[]` | Resource definitions appended to the prompt |
+| `notes` | Allow agent notes (default `true`) |
+
+### Templates
+
+| Syntax | Resolves to |
+|---|---|
+| `{{params.x}}` | Workflow parameter |
+| `{{state.x}}` | Captured value |
+| `{{steps.<step_id>.<key>}}` | Captured value, scoped to the step that captured it |
+| `{{resolved.x}}` | Params flagged `resolve: true` |
+| `{{fetch.x}}` | Result of the current step's `fetch` |
+| `{{project.x}}` | Project data from a `ProjectDataResolver` (engine option) |
+
+### Workflow-level fields
+
+`id`, `version`, `name`, `description`, `params[]` (`name`, `label`, `description`, `required`, `default`, `identity`, `resolve`), `lifecycle` (`allow_pause`, `auto_cancel_after`, `auto_archive_after` — durations like `"48h"`, `"30d"`), `tools[]` (`name`, `server`, `description`, `required`), `resources[]`, `steps[]`.
+
+### Agent personas
 
 ```yaml
 id: hr-assistant
@@ -108,27 +149,114 @@ workflows:
   - offboarding
 ```
 
-Pass agent YAML strings via the `agents` option. They register as MCP prompts (`agent_<id>`).
+Agents register as MCP prompts (`agent_<id>`).
 
-### Custom Storage
+## Server-side execution: sources and delegates
 
-The default `InMemoryStore` loses state on restart. For persistence, use `LocalStorageStore` with any `KVStorage` backend:
+`mcp_call` steps and `fetch` call a **source** — a handler you register per namespace:
 
 ```typescript
-import { VelaWorkflows, LocalStorageStore } from "vela-sdk";
+import { registerSource } from "vela-sdk";
 
-// KVStorage interface: getItem, setItem, removeItem (sync or async)
-const store = new LocalStorageStore(localStorage);
-// or: new LocalStorageStore(myRedisAdapter, "myapp:")
-
-const workflows = new VelaWorkflows({
-  server: adapter,
-  store,
-  workflows: [yaml],
+registerSource("devops", async (tool, params, ctx) => {
+  // tool = mcp_call.mcp_tool or fetch.action; params already template-resolved
+  return await myDevOpsClient.call(tool, params);
 });
 ```
 
-Implement the full `WorkflowStore` interface for custom backends (databases, APIs):
+```yaml
+- id: load_ticket
+  type: mcp_call
+  mcp_source: devops
+  mcp_tool: get_work_item
+  mcp_params: { id: "{{params.ticket_id}}" }
+  capture:
+    - key: ticket
+  on_error: { retry: 2, fallback: manual_entry }
+```
+
+`delegate` steps call a **delegate handler**:
+
+```typescript
+import { registerDelegate } from "vela-sdk";
+
+registerDelegate("shell", async (step, ctx) => {
+  const cmd = ctx.resolveVars(step.task);
+  const out = await runCommand(cmd);
+  ctx.setCapture("exit_code", out.code);
+  return out.stdout;
+});
+```
+
+```yaml
+- id: build
+  type: delegate
+  delegate: shell
+  task: "npm run build"
+```
+
+Registering the same name twice throws. Failures go through the step's `on_error` (retry, fallback, abort).
+
+## Adapters
+
+| Adapter | Import | Notes |
+|---|---|---|
+| `OfficialSdkAdapter` | `vela-sdk/adapters/mcp-sdk` | Full MCP elicitation support |
+| `FastMcpAdapter` | `vela-sdk/adapters/fastmcp` | No elicitation; `source: elicit` captures fall back to agent-driven collection |
+| `createVelaToolkit` / `LangChainAdapter` | `vela-sdk/adapters/langchain` | Returns LangChain `StructuredTool`s |
+| `createVelaAzureToolset` / `AzureAgentsAdapter` | `vela-sdk/adapters/azure-agents` (also root export) | Azure AI Agents function tools + `handleToolCall` |
+| `HeadlessAdapter` | `vela-sdk` | No transport; collects tools/prompts for custom bridging (IPC, Agent SDK, UI). Default when `server` is omitted |
+
+```typescript
+// FastMCP
+import { FastMCP } from "fastmcp";
+import { FastMcpAdapter } from "vela-sdk/adapters/fastmcp";
+const server = new FastMCP({ name: "my-server", version: "1.0.0" });
+new VelaWorkflows({ server: new FastMcpAdapter(server), workflows: [yaml] });
+server.start({ transportType: "stdio" });
+
+// LangChain
+import { createVelaToolkit } from "vela-sdk/adapters/langchain";
+const { tools } = createVelaToolkit({ workflows: [yaml] });
+
+// Azure AI Agents
+import { createVelaAzureToolset } from "vela-sdk/adapters/azure-agents";
+const { tools, handleToolCall } = createVelaAzureToolset({ workflows: [yaml] });
+```
+
+## Configuration
+
+```typescript
+new VelaWorkflows({
+  server,                     // McpServerAdapter (default: HeadlessAdapter)
+  workflows: [yaml],          // workflow YAML strings
+  agents: [yaml],             // agent YAML strings
+  resources: [yaml],          // resource YAML strings
+  store,                      // WorkflowStore (default: InMemoryStore)
+  engine,                     // IWorkflowEngine (default: DefaultWorkflowEngine)
+  locale: getLocale("de"),    // "en" (default) or "de", or a custom Locale
+  autoAdvance: true,          // run agent-driven steps without a round-trip
+  registerPrompts: true,
+  toolPrefix: "workflow",     // → workflow_advance, workflow_status, workflow_list
+  toolNameFormat: { advance: "do_step" },
+  resourceResolver,           // resolve resource references
+  workflowResolver,           // load workflows from a DB/API
+  sessionProvider,            // per-request WorkflowStore (e.g. transactions)
+  paramFilter,                // control which missing params get elicited
+  projectResolver,            // resolve project slugs to ids
+});
+```
+
+### Storage
+
+`InMemoryStore` (default) loses state on restart. `LocalStorageStore` persists to any KV backend with `getItem`/`setItem`/`removeItem` (sync or async):
+
+```typescript
+import { LocalStorageStore } from "vela-sdk";
+const store = new LocalStorageStore(myRedisAdapter, "myapp:");
+```
+
+Or implement `WorkflowStore` yourself:
 
 ```typescript
 interface WorkflowStore {
@@ -141,188 +269,22 @@ interface WorkflowStore {
 }
 ```
 
-### Custom Engine
+### Custom engine
 
-Replace the default state machine with a custom `IWorkflowEngine`:
+Implement `IWorkflowEngine` (`startOrResume`, `advance`, `assemblePrompt`, `getStep`, `checkLifecycle`, `validateDependsOn`, `handleOnError`) and pass it as `engine`.
 
-```typescript
-import { VelaWorkflows, type IWorkflowEngine } from "vela-sdk";
+## API overview
 
-class MyEngine implements IWorkflowEngine {
-  // Implement: startOrResume, advance, assemblePrompt, getStep,
-  //            checkLifecycle, validateDependsOn, handleOnError
-}
-
-const workflows = new VelaWorkflows({
-  server: adapter,
-  engine: new MyEngine(),
-  workflows: [yaml],
-});
-```
-
-### Locale
-
-```typescript
-import { VelaWorkflows, getLocale } from "vela-sdk";
-
-// Built-in: "en" (default), "de"
-const workflows = new VelaWorkflows({
-  server: adapter,
-  locale: getLocale("de"),
-  workflows: [yaml],
-});
-```
-
-Provide a custom `Locale` object to translate all user-facing strings.
-
-### Tool Name Customization
-
-```typescript
-const workflows = new VelaWorkflows({
-  server: adapter,
-  toolPrefix: "wf",                         // default: "workflow"
-  toolNameFormat: { advance: "do_step" },    // override individual names
-  workflows: [yaml],
-});
-// Registers: do_step, wf_status, wf_list
-```
-
-### Extension Protocols
-
-Plug in custom logic for advanced scenarios:
-
-```typescript
-import type {
-  WorkflowResolver,
-  SessionProvider,
-  ParamFilter,
-  ProjectResolver,
-} from "vela-sdk";
-
-const workflows = new VelaWorkflows({
-  server: adapter,
-  workflows: [yaml],
-
-  // Load workflows from a database or API instead of in-memory
-  workflowResolver: myDbResolver,
-
-  // Provide per-request WorkflowStore instances (e.g. DB transactions)
-  sessionProvider: mySessionProvider,
-
-  // Control which missing params trigger elicitation
-  paramFilter: myParamFilter,
-
-  // Resolve project slugs to IDs
-  projectResolver: myProjectResolver,
-});
-```
-
-## Adapters
-
-### FastMCP
-
-```typescript
-import { FastMCP } from "fastmcp";
-import { FastMcpAdapter } from "vela-sdk/adapters/fastmcp";
-
-const server = new FastMCP({ name: "my-server", version: "1.0.0" });
-const adapter = new FastMcpAdapter(server);
-
-const workflows = new VelaWorkflows({
-  server: adapter,
-  workflows: [yaml],
-});
-
-server.start({ transportType: "stdio" });
-```
-
-Note: FastMCP does not support MCP elicitation. Steps with `source: elicit` captures will fall back to agent-driven collection.
-
-### Official @modelcontextprotocol/sdk
-
-```typescript
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { OfficialSdkAdapter } from "vela-sdk/adapters/mcp-sdk";
-
-const mcpServer = new McpServer(
-  { name: "my-server", version: "1.0.0" },
-  { capabilities: {} },
-);
-const adapter = new OfficialSdkAdapter(mcpServer);
-
-const workflows = new VelaWorkflows({
-  server: adapter,
-  workflows: [yaml],
-});
-```
-
-This adapter supports full MCP elicitation for interactive capture collection.
-
-## API Reference
-
-### Main
-
-| Export | Type | Description |
-|---|---|---|
-| `VelaWorkflows` | class | Main entry point -- parses YAML, registers tools/prompts |
-| `VelaWorkflowsOptions` | interface | Constructor options |
-
-### Engine
-
-| Export | Type | Description |
-|---|---|---|
-| `DefaultWorkflowEngine` | class | Built-in state machine engine |
-| `IWorkflowEngine` | interface | Engine protocol for custom implementations |
-| `PromptBuilder` | class | Assembles step prompts with template resolution |
-| `DialogModeRegistry` | class | Registry for dialog step modes |
-| `WorkflowRunState` | interface | Runtime state of a workflow run |
-| `WorkflowRunStatus` | enum | `active`, `paused`, `completed`, `cancelled` |
-| `AdvanceResult` | interface | Return value of `engine.advance()` |
-
-### Storage
-
-| Export | Type | Description |
-|---|---|---|
-| `WorkflowStore` | interface | Storage protocol |
-| `InMemoryStore` | class | In-memory store (default) |
-| `LocalStorageStore` | class | KV-backed persistent store |
-| `KVStorage` | interface | Minimal KV interface (`getItem`/`setItem`/`removeItem`) |
-
-### MCP
-
-| Export | Type | Description |
-|---|---|---|
-| `McpServerAdapter` | interface | Framework-agnostic server interface |
-| `McpContext` | interface | Tool execution context (elicit + log) |
-| `FastMcpAdapter` | class | Adapter for `fastmcp` (import from `vela-sdk/adapters/fastmcp`) |
-| `OfficialSdkAdapter` | class | Adapter for `@modelcontextprotocol/sdk` (import from `vela-sdk/adapters/mcp-sdk`) |
-
-### Protocols
-
-| Export | Type | Description |
-|---|---|---|
-| `WorkflowResolver` | interface | Resolve workflow definitions from any source |
-| `SessionProvider` | interface | Provide scoped `WorkflowStore` sessions |
-| `ParamFilter` | interface | Control missing-param elicitation |
-| `ProjectResolver` | interface | Resolve project slugs to IDs |
-
-### Schemas & Loader
-
-| Export | Type | Description |
-|---|---|---|
-| `WorkflowDefinition` | interface | Parsed workflow definition |
-| `ToolRequirement` | interface | External MCP tool declaration (name, server, description, required) |
-| `AgentDefinition` | interface | Parsed agent definition |
-| `parseWorkflowYaml` | function | Parse YAML string to `WorkflowDefinition` |
-| `parseAgentYaml` | function | Parse YAML string to `AgentDefinition` |
-
-### Locale
-
-| Export | Type | Description |
-|---|---|---|
-| `Locale` | interface | All user-facing strings |
-| `getLocale` | function | Get built-in locale (`"en"` or `"de"`) |
-| `enLocale` / `deLocale` | function | Locale factory functions |
+| Area | Exports |
+|---|---|
+| Main | `VelaWorkflows`, `VelaWorkflowsOptions` |
+| Engine | `DefaultWorkflowEngine`, `IWorkflowEngine`, `PromptBuilder`, `DialogModeRegistry`, `WorkflowRunState`, `WorkflowRunStatus`, `AdvanceResult`, `ResourceResolver`, `ProjectDataResolver` |
+| Sources / delegates | `registerSource`, `resolveSource`, `clearSources`, `registerDelegate`, `resolveDelegate`, `clearDelegates`, `makeDelegateStep` |
+| Storage | `WorkflowStore`, `InMemoryStore`, `LocalStorageStore`, `KVStorage` |
+| MCP | `McpServerAdapter`, `McpContext`, `HeadlessAdapter`, `AzureAgentsAdapter`, `createVelaAzureToolset`, `ElicitationService`, response/elicitation helpers |
+| Protocols | `WorkflowResolver`, `SessionProvider`, `ParamFilter`, `ProjectResolver`, `InMemoryWorkflowResolver`, `SimpleSessionProvider`, `DefaultParamFilter` |
+| Schemas & loader | Zod schemas (`workflowDefinitionSchema`, `anyStepSchema`, …), `parseWorkflowYaml`, `parseAgentYaml`, `parseResourceYaml`, `parseWorkflowFilename` |
+| Locale | `Locale`, `getLocale`, `enLocale`, `deLocale` |
 
 ## License
 

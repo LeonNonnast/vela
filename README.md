@@ -75,7 +75,7 @@ steps:
         elicit: never
 ```
 
-7 step types: `freeform`, `choice`, `confirm`, `execute`, `dialog`, `workflow` (sub-workflows), `mcp_call`. Template resolution, branching, auto-advance, identity-based resume, and structured input collection via elicitation.
+8 step types: `freeform`, `choice`, `confirm`, `execute`, `dialog`, `workflow` (sub-workflows), `mcp_call`, `delegate` (TypeScript only). Template resolution, branching, auto-advance, identity-based resume, `fetch` before a step, `on_error` handling, lifecycle rules, and structured input collection via elicitation.
 
 ## Examples
 

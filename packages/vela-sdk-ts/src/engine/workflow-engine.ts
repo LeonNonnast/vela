@@ -452,7 +452,12 @@ export class DefaultWorkflowEngine implements IWorkflowEngine {
       // Check depends_on before moving to the next step
       const nextStep = this.getStep(workflowDef, nextStepId);
       if (nextStep) {
-        const [depsOk, missing] = this.validateDependsOn(run, nextStep);
+        // Validate against the state *including* this step's captures, so a
+        // step can depend on fields captured by the step right before it.
+        const [depsOk, missing] = this.validateDependsOn(
+          { ...run, stateData: { ...run.stateData, ...stateUpdates } },
+          nextStep,
+        );
         if (!depsOk) {
           // Dependencies not met — save current state but don't move
           run = await this.store.updateStep(run.id, run.currentStep ?? null, {
