@@ -14,6 +14,10 @@ import {
   type McpContext,
   type ElicitResult,
   deLocale,
+  registerSource,
+  clearSources,
+  registerDelegate,
+  clearDelegates,
 } from "../../src/index.js";
 import {
   SIMPLE_WORKFLOW_YAML,
@@ -483,4 +487,68 @@ describe("VelaWorkflows", () => {
     const status = JSON.parse(statusJson);
     expect(status.status).toBe("completed");
   });
+
+  // -----------------------------------------------------------------------
+  // Server-executed steps (mcp_call / delegate) with captures
+  // -----------------------------------------------------------------------
+
+  const SERVER_STEPS_YAML = `
+id: server-steps
+version: "1.0.0"
+name: Server Steps
+params:
+  - name: user
+    required: true
+steps:
+  - id: ask
+    type: freeform
+    prompt: "Goals?"
+    capture: [{ key: goals, source: output }]
+  - id: call
+    type: mcp_call
+    mcp_source: demo
+    mcp_tool: hello
+    mcp_params: { name: "{{params.user}}" }
+    depends_on: [{ step: ask, fields: [goals] }]
+    capture: [{ key: greeting, source: output }]
+  - id: work
+    type: delegate
+    delegate: upper
+    task: "{{state.greeting}}"
+    capture: [{ key: shout, source: output }]
+  - id: done
+    type: confirm
+    prompt: "{{state.shout}}"
+`;
+
+  for (const autoAdvance of [true, false]) {
+    it(`mcp_call and delegate steps with captures run server-side (autoAdvance=${autoAdvance})`, async () => {
+      clearSources();
+      clearDelegates();
+      registerSource("demo", async (_tool, params) => ({ greeting: `hi ${params.name}` }));
+      registerDelegate("upper", async (step, ctx) => {
+        const text = String(ctx.resolveVars(step.task));
+        return { shout: text.toUpperCase() };
+      });
+
+      new VelaWorkflows({ server, workflows: [SERVER_STEPS_YAML], autoAdvance });
+      const ctx = createMockContext();
+      const advance = server.getTool("workflow_advance")!;
+
+      const start = JSON.parse(
+        await advance.execute({ workflow_id: "server-steps", params: JSON.stringify({ user: "Bob" }) }, ctx),
+      );
+      let resp = JSON.parse(await advance.execute({ run_id: start.run_id, output: "learn TS" }, ctx));
+
+      // Without auto-advance the agent follows next_action: advance without output.
+      for (let i = 0; i < 3 && resp.current_step !== "done"; i++) {
+        resp = JSON.parse(await advance.execute({ run_id: start.run_id }, ctx));
+      }
+
+      expect(resp.current_step).toBe("done");
+      expect(resp.prompt).toContain("HI BOB");
+      clearSources();
+      clearDelegates();
+    });
+  }
 });

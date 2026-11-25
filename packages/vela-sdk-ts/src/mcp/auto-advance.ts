@@ -30,6 +30,15 @@ function isAutomationMode(run: WorkflowRunState): boolean {
   return val === true || val === "true" || val === 1;
 }
 
+/**
+ * `mcp_call` and `delegate` steps run server-side inside `engine.advance()`;
+ * their captures are filled from the handler result, never via elicitation
+ * or agent output.
+ */
+export function isServerExecutedStep(stepDef: AnyStepDefinition): boolean {
+  return stepDef.type === "mcp_call" || stepDef.type === "delegate";
+}
+
 // ---------------------------------------------------------------------------
 // stepCapturesComplete
 // ---------------------------------------------------------------------------
@@ -38,6 +47,11 @@ export function stepCapturesComplete(
   stepDef: AnyStepDefinition,
   run: WorkflowRunState,
 ): boolean {
+  // Server-executed steps are always ready to advance: the engine runs the
+  // handler and fills the captures from its result.
+  if (isServerExecutedStep(stepDef)) {
+    return true;
+  }
   const elicitable = stepDef.capture.filter((cap) => cap.elicit !== "never");
   if (elicitable.length === 0) {
     return true;
@@ -64,8 +78,9 @@ export async function elicitStepCaptures(
     return run;
   }
 
-  // Dialog steps handle captures after all phases complete
-  if (stepDef.type === "dialog") {
+  // Dialog steps handle captures after all phases complete;
+  // server-executed steps fill captures from the handler result.
+  if (stepDef.type === "dialog" || isServerExecutedStep(stepDef)) {
     return run;
   }
 
@@ -149,6 +164,17 @@ export async function autoAdvanceLoop(
     // Workflow steps delegate to sub-workflows (handled by orchestrator)
     if (stepDef.type === "workflow") {
       break;
+    }
+
+    // mcp_call / delegate steps are executed server-side by the engine;
+    // their captures come from the handler result, never from elicitation.
+    if (isServerExecutedStep(stepDef)) {
+      current = await engine.advance(current.run, wfDef, {
+        resourceResolver,
+        locale,
+      });
+      await store.commit();
+      continue;
     }
 
     // Steps without elicitable captures need agent output

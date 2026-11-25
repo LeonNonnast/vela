@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-25
+
+### Fixed
+- **TS:** `mcp_call` and `delegate` steps that declare `capture` no longer stall in `VelaWorkflows`. They were treated like interactive steps (elicitation gate, "awaiting_input"), so the handler never ran unless the agent sent some `output`. They now run server-side right away, with and without `autoAdvance`.
+
 ## [0.1.0] - 2026-11-25
 
 First release of the TypeScript SDK (`vela-sdk` on npm). The Python SDK (`vela-sdk` on PyPI) shares the same version but is not published yet.
